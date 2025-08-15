@@ -1,8 +1,6 @@
 package com.arshwaseem.oe_calc;
 
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 public class AdderAdapter {
@@ -11,8 +9,8 @@ public class AdderAdapter {
         this.adderService = adderService;
     }
 
-    @GetMapping("/add")
-    public double Add(@RequestParam Double numA, @RequestParam Double numB) {
+    @PostMapping("/add")
+    public double Add(@RequestBody double numA, @RequestBody double numB) {
         return adderService.Add(numA, numB);
     }
 }
