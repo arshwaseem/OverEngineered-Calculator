@@ -1,0 +1,19 @@
+syntax = "proto3";
+package SubtractorGRPC;
+option java_multiple_files = true;
+option java_package = "com.arshwaseem.oe_calc";
+option java_outer_classname = "SubtractorServiceGRPC";
+
+service SubtractorService{
+
+  rpc Subtract (SubtractRequest) returns (SubtractResponse);
+}
+
+message SubtractRequest {
+  double numA = 1;
+  double numB = 2;
+}
+
+message SubtractResponse {
+  double result = 1;
+}

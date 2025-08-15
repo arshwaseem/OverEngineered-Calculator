@@ -1,0 +1,19 @@
+syntax = "proto3";
+package AdderGRPC;
+option java_multiple_files = true;
+option java_package = "com.arshwaseem.oe_calc";
+option java_outer_classname = "AdderServiceGRPC";
+
+service adderService{
+
+  rpc Add (AddRequest) returns (AddResponse);
+}
+
+message AddRequest {
+  double numA = 1;
+  double numB = 2;
+}
+
+message AddResponse {
+  double result = 1;
+}
