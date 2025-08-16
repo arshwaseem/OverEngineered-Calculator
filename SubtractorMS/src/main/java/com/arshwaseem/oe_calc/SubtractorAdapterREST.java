@@ -4,9 +4,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-public class SubtractorAdapter {
+public class SubtractorAdapterREST {
     private final SubtractorService subtractorService;
-    public SubtractorAdapter(SubtractorService subtractorService) {
+    public SubtractorAdapterREST(SubtractorService subtractorService) {
         this.subtractorService = subtractorService;
     }
 

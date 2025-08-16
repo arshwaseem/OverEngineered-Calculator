@@ -1,10 +1,10 @@
 syntax = "proto3";
-package AdderGRPC;
+package com.arshwaseem.oe_calc;
 option java_multiple_files = true;
 option java_package = "com.arshwaseem.oe_calc";
 option java_outer_classname = "AdderServiceGRPC";
 
-service adderService{
+service AdderService{
 
   rpc Add (AddRequest) returns (AddResponse);
 }
