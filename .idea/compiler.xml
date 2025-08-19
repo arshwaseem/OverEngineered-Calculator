@@ -6,6 +6,12 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="oe-calc (4)" />
+        <module name="oe-calc (5)" />
+        <module name="oe-calc (2)" />
+        <module name="oe-calc (3)" />
+        <module name="oe-calc (1)" />
+        <module name="oe-calc" />
         <module name="DividerMS" />
         <module name="SubtractorMS" />
         <module name="MultiplierMS" />
@@ -19,6 +25,12 @@
       <module name="DividerMS" options="-parameters" />
       <module name="MultiplierMS" options="-parameters" />
       <module name="SubtractorMS" options="-parameters" />
+      <module name="oe-calc" options="-parameters" />
+      <module name="oe-calc (1)" options="-parameters" />
+      <module name="oe-calc (2)" options="-parameters" />
+      <module name="oe-calc (3)" options="-parameters" />
+      <module name="oe-calc (4)" options="-parameters" />
+      <module name="oe-calc (5)" options="-parameters" />
     </option>
   </component>
 </project>
