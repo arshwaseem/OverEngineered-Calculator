@@ -1,17 +1,15 @@
 package com.arshwaseem.oe_calc;
 
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Test;
+import org.junit.AfterClass;
+import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.util.TestPropertyValues;
-import org.springframework.context.ApplicationContextInitializer;
-import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.scheduling.concurrent.ConcurrentTaskExecutor;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import javax.sql.DataSource;
 
 @SpringBootTest
 public class UserServiceTests {
@@ -20,34 +18,45 @@ public class UserServiceTests {
             .withUsername("test")
             .withPassword("test");
 
+    static {
+        postgres.start();
+    }
+
+    @DynamicPropertySource
+    static void overrideProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.datasource.url", postgres::getJdbcUrl);
+        registry.add("spring.datasource.username", postgres::getUsername);
+        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.flyway.enabled",() -> "false");
+    }
+
+
+    @Autowired
+    private DataSource dataSource;
+
+    @Autowired
     private UserService userService;
 
-    public UserServiceTests(UserService userService) {
-        this.userService = userService;
+    @BeforeEach
+    void setup(@Autowired DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users(\n" +
+                "    id SERIAL PRIMARY KEY,\n" +
+                "    userName VARCHAR(50) NOT NULL UNIQUE,\n" +
+                "    password VARCHAR(255) NOT NULL,\n" +
+                "    lastResult DOUBLE PRECISION\n" +
+                ")");
+        jdbcTemplate.execute("INSERT INTO users(userName, password, lastResult) VALUES ('test', 'test', 0)");
     }
 
-    static class Initializer implements ApplicationContextInitializer<ConfigurableApplicationContext> {
-        @Override
-        public void initialize(ConfigurableApplicationContext configurableApplicationContext) {
-            TestPropertyValues.of(
-                    "spring.datasource.url=" + postgres.getJdbcUrl(),
-                    "spring.datasource.username=" + postgres.getUsername(),
-                    "spring.datasource.password=" + postgres.getPassword()
-            ).applyTo(configurableApplicationContext.getEnvironment());
-        }
+    @AfterEach
+    void teardown(@Autowired DataSource dataSource) {
+        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
+        jdbcTemplate.execute("DELETE FROM users");
     }
 
-    @BeforeAll
-    static void setup() {
-        postgres.start();
-        JdbcTemplate jdbcTemplate = new JdbcTemplate();
-        jdbcTemplate.execute("INSERT INTO USERS('UserName', 'Password', 'LastResult') VALUES ('test', 'test', 0)");
-    }
-
-    @AfterAll
-    static void teardown() {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate();
-        jdbcTemplate.execute("DELETE FROM USERS");
+    @AfterClass
+    public static void cleanUp() {
         postgres.stop();
     }
 
@@ -55,7 +64,7 @@ public class UserServiceTests {
     void getById(){
         User res = userService.GetByID(Long.valueOf(1)).get();
         Assertions.assertNotNull(res);
-        Assertions.assertEquals(res.getID(), Long.valueOf(1));
+        Assertions.assertEquals(res.getId(), Long.valueOf(1));
     }
 
     @Test

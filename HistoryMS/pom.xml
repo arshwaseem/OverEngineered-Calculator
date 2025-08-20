@@ -14,8 +14,8 @@
 	<groupId>com.arshwaseem</groupId>
 	<artifactId>oe-calc</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>oe-calc.user</name>
-	<description>User MicroService</description>
+	<name>oe-calc.history</name>
+	<description>History MicroService</description>
     <url/>
     <licenses>
         <license/>

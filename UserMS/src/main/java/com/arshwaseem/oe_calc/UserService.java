@@ -20,7 +20,7 @@ public class UserService implements UserUseCases{
 
     @Override
     public Optional<User> GetByName(String name) {
-        return userJPARepository.findByUsername(name);
+        return userJPARepository.findByUserName(name);
     }
 
     @Override

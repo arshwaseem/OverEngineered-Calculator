@@ -1,51 +1,53 @@
 package com.arshwaseem.oe_calc;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
+import jakarta.persistence.*;
 
 @Entity
+@Table(name = "users")
 public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long ID;
+    @Column(name = "id")
+    private Long id;
 
-    public String UserName;
-    public String Password;
-    public double LastResult;
+    @Column(name="username")
+    public String userName;
+    @Column(name="password")
+    public String password;
+    @Column(name = "lastresult")
+    public double lastResult;
 
 
     public String getUserName() {
-        return UserName;
+        return userName;
     }
 
     public void setUserName(String userName) {
-        this.UserName = userName;
+        this.userName = userName;
     }
 
     public String getPassword() {
-        return Password;
+        return password;
     }
 
     public void setPassword(String password) {
-        this.Password = password;
+        this.password = password;
     }
 
     public double getLastResult() {
-        return LastResult;
+        return lastResult;
     }
 
     public void setLastResult(double lastResult) {
-        this.LastResult = lastResult;
+        this.lastResult = lastResult;
     }
 
-    public Long getID() {
-        return ID;
+    public Long getId() {
+        return id;
     }
 
-    public void setID(Long ID) {
-        this.ID = ID;
+    public void setId(Long ID) {
+        this.id = ID;
     }
 }
