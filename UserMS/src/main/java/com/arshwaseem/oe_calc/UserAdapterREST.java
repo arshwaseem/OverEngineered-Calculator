@@ -8,7 +8,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
 
-@RestController("/user")
+@RestController
+@RequestMapping("/user")
 public class UserAdapterREST {
     private static final Logger log = LoggerFactory.getLogger(UserAdapterREST.class);
     private final UserService userService;

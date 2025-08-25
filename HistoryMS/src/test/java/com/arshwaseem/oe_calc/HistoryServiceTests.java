@@ -11,6 +11,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @SpringBootTest
@@ -64,7 +65,7 @@ public class HistoryServiceTests {
         res.setNumA(10);
         res.setNumB(20);
         res.setResult(30);
-        res.setTimeStamp(new Timestamp(System.currentTimeMillis()));
+        res.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
 
         try {
             historyService.AddUpdateHistory(res);
