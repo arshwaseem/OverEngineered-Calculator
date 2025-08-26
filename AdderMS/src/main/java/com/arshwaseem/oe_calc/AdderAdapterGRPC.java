@@ -38,6 +38,8 @@ public class AdderAdapterGRPC extends AdderServiceGrpc.AdderServiceImplBase {
             CalcHistory.setResult(result);
             CalcHistory.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
 
+            historyService.PublishHistory(CalcHistory);
+
             AddResponse response = AddResponse.newBuilder().setResult(result).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();

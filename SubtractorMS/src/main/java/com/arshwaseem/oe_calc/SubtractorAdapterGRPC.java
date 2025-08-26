@@ -1,16 +1,24 @@
 package com.arshwaseem.oe_calc;
+import com.arshwaseem.oe_calc.history.History;
+import com.arshwaseem.oe_calc.history.HistoryService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+
 public class SubtractorAdapterGRPC extends SubtractorServiceGrpc.SubtractorServiceImplBase{
 
     private static final Logger log = LoggerFactory.getLogger(SubtractorAdapterGRPC.class);
     private final SubtractorService  subtractorService;
+    private final HistoryService historyService;
 
-    public SubtractorAdapterGRPC(SubtractorService subtractorService){
+    public SubtractorAdapterGRPC(SubtractorService subtractorService, HistoryService historyService){
+
         this.subtractorService = subtractorService;
+        this.historyService = historyService;
     }
 
     @Override
@@ -22,6 +30,15 @@ public class SubtractorAdapterGRPC extends SubtractorServiceGrpc.SubtractorServi
             double result = subtractorService.Subtract(numA, numB);
 
             SubtractResponse response = SubtractResponse.newBuilder().setResult(result).build();
+
+            History CalcHistory = new History();
+            CalcHistory.setNumA(numA);
+            CalcHistory.setNumB(numB);
+            CalcHistory.setResult(result);
+            CalcHistory.setServiceName("Subtractor");
+            CalcHistory.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
+
+            historyService.PublishHistory(CalcHistory);
 
             responseObserver.onNext(response);
             responseObserver.onCompleted();

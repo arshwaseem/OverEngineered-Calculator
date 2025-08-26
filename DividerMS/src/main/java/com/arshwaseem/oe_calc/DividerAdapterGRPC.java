@@ -1,16 +1,24 @@
 package com.arshwaseem.oe_calc;
+import com.arshwaseem.oe_calc.history.History;
+import com.arshwaseem.oe_calc.history.HistoryService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
+
 public class DividerAdapterGRPC extends DividerServiceGrpc.DividerServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(DividerAdapterGRPC.class);
     private final DividerSevice dividerService;
+    private final HistoryService historyService;
 
-    public DividerAdapterGRPC(DividerSevice dividerService) {
+    public DividerAdapterGRPC(DividerSevice dividerService, HistoryService historyService) {
+
         this.dividerService = dividerService;
+        this.historyService = historyService;
     }
 
     @Override
@@ -31,6 +39,15 @@ public class DividerAdapterGRPC extends DividerServiceGrpc.DividerServiceImplBas
             double result = dividerService.Divider(numA, numB);
 
             DivideResponse divideResponse = DivideResponse.newBuilder().setResult(result).build();
+
+            History CalcHistory = new History();
+            CalcHistory.setNumA(numA);
+            CalcHistory.setNumB(numB);
+            CalcHistory.setServiceName("Divider");
+            CalcHistory.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
+            CalcHistory.setResult(result);
+
+            historyService.PublishHistory(CalcHistory);
 
             responseObserver.onNext(divideResponse);
             responseObserver.onCompleted();
