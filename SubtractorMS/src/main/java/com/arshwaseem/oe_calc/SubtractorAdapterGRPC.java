@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-public class SubtractorAdapterGRPC extends SubtractorServiceGrpc.SubtractorServiceImplBase{
+public class SubtractorAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(SubtractorAdapterGRPC.class);
     private final SubtractorService  subtractorService;
@@ -22,14 +22,14 @@ public class SubtractorAdapterGRPC extends SubtractorServiceGrpc.SubtractorServi
     }
 
     @Override
-    public void subtract (SubtractRequest request, StreamObserver<SubtractResponse> responseObserver) {
+    public void subtract (OperationRequest request, StreamObserver<OperationResponse> responseObserver) {
         try{
             double numA = request.getNumA();
             double numB = request.getNumB();
 
             double result = subtractorService.Subtract(numA, numB);
 
-            SubtractResponse response = SubtractResponse.newBuilder().setResult(result).build();
+            OperationResponse response = OperationResponse.newBuilder().setResult(result).build();
 
             History CalcHistory = new History();
             CalcHistory.setNumA(numA);

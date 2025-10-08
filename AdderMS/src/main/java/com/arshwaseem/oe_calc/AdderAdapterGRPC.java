@@ -12,7 +12,7 @@ import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
 @GrpcService
-public class AdderAdapterGRPC extends AdderServiceGrpc.AdderServiceImplBase {
+public class AdderAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LogManager.getLogger(AdderAdapterGRPC.class);
     private final AdderService adderService;
@@ -24,23 +24,23 @@ public class AdderAdapterGRPC extends AdderServiceGrpc.AdderServiceImplBase {
     }
 
     @Override
-    public void add(AddRequest request, StreamObserver<AddResponse> responseObserver) {
+    public void add(OperationRequest request, StreamObserver<OperationResponse> responseObserver) {
 
         try{
             double numA =  request.getNumA();
             double numB = request.getNumB();
             double result = adderService.Add(numA, numB);
 
-            History CalcHistory = new History();
-            CalcHistory.setServiceName("Adder");
-            CalcHistory.setNumA(numA);
-            CalcHistory.setNumB(numB);
-            CalcHistory.setResult(result);
-            CalcHistory.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
+            History calcHistory = new History();
+            calcHistory.setServiceName("Adder");
+            calcHistory.setNumA(numA);
+            calcHistory.setNumB(numB);
+            calcHistory.setResult(result);
+            calcHistory.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
 
-            historyService.PublishHistory(CalcHistory);
+            historyService.PublishHistory(calcHistory);
 
-            AddResponse response = AddResponse.newBuilder().setResult(result).build();
+            OperationResponse response = OperationResponse.newBuilder().setResult(result).build();
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {

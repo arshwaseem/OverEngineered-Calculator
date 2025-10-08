@@ -1,0 +1,22 @@
+syntax = "proto3";
+package com.arshwaseem.oe_calc;
+option java_multiple_files = true;
+option java_package = "com.arshwaseem.oe_calc";
+option java_outer_classname = "OperationServiceGRPC";
+
+service OperationService{
+
+  rpc Add (OperationRequest) returns (OperationResponse);
+  rpc Subtract (OperationRequest) returns (OperationResponse);
+  rpc Multiply (OperationRequest) returns (OperationResponse);
+  rpc Divide (OperationRequest) returns (OperationResponse);
+}
+
+message OperationRequest {
+  double numA = 1;
+  double numB = 2;
+}
+
+message OperationResponse {
+  double result = 1;
+}

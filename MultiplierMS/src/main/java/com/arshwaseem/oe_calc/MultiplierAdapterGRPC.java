@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-public class MultiplierAdapterGRPC extends MultiplierServiceGrpc.MultiplierServiceImplBase{
+public class MultiplierAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(MultiplierAdapterGRPC.class);
     private final MultiplierService multiplierService;
@@ -24,14 +24,14 @@ public class MultiplierAdapterGRPC extends MultiplierServiceGrpc.MultiplierServi
     }
 
     @Override
-    public void multiply (MultiplyRequest request, StreamObserver<MultiplyResponse> responseObserver) {
+    public void multiply (OperationRequest request, StreamObserver<OperationResponse> responseObserver) {
 
         try{
             double numA = request.getNumA();
             double numB = request.getNumB();
             double result = multiplierService.Multiply(numA, numB);
 
-            MultiplyResponse response = MultiplyResponse.newBuilder().setResult(result).build();
+            OperationResponse response = OperationResponse.newBuilder().setResult(result).build();
 
             History CalcHistory = new History();
             CalcHistory.setNumA(numA);

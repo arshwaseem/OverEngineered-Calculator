@@ -12,12 +12,6 @@ public class UserService implements UserUseCases{
         this.userJPARepository = userJPARepository;
     }
 
-
-    @Override
-    public Optional<User> GetByID(Long id) {
-        return userJPARepository.findById(id);
-    }
-
     @Override
     public Optional<User> GetByName(String name) {
         return userJPARepository.findByUserName(name);
@@ -26,6 +20,17 @@ public class UserService implements UserUseCases{
     @Override
     public void AddUser(User user) {
         userJPARepository.save(user);
+    }
+
+    @Override
+    public boolean userExists(String userName) {
+        Optional<User> user = userJPARepository.findByUserName(userName);
+        return user.isPresent();
+    }
+
+    @Override
+    public void DeleteUser(String name){
+        userJPARepository.deleteByUserName(name);
     }
 
 }

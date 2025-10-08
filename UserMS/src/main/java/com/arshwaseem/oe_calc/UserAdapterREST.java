@@ -21,6 +21,9 @@ public class UserAdapterREST {
     @PostMapping("/register")
     public ResponseEntity<User> RegisterUser(User user) {
         try{
+            if(userService.userExists(user.getUserName())){
+                throw new RuntimeException("User already exists");
+            }
             userService.AddUser(user);
             return ResponseEntity.status(HttpStatus.CREATED).body(user);
         } catch (Exception e) {
@@ -29,33 +32,32 @@ public class UserAdapterREST {
         }
     }
 
-    @PostMapping("/{id}")
-    public ResponseEntity<User> GetById(@PathVariable String id) {
+    @DeleteMapping
+    public ResponseEntity<User> DeleteUser(User user) {
         try{
-            Optional<User> login = userService.GetByID(Long.parseLong(id));
-            if (login.isPresent()) {
-                return ResponseEntity.of(login);
+            if(!userService.userExists(user.getUserName())){
+                throw new RuntimeException("User does not exist");
+            }
+            userService.DeleteUser(user.getUserName());
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }catch (Exception e) {
+            log.error("Error Deleting User: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    @GetMapping
+    public ResponseEntity<User> GetUserByName(@RequestBody String userName) {
+        try{
+            Optional<User> result = userService.GetByName(userName);
+            if(result.isPresent()){
+                return ResponseEntity.status(HttpStatus.OK).body(result.get());
             }
             else {
                 return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
             }
         } catch (Exception e) {
-            log.error("Error while trying to login user " + "\n" + e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
-    }
-
-    @PostMapping("/name")
-    public ResponseEntity<User> GetByName(@RequestBody String UserName) {
-        try{
-            Optional<User> login = userService.GetByName(UserName);
-            if (login.isPresent()) {
-                return ResponseEntity.status(HttpStatus.OK).body(login.get());
-            }
-            else  {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
-            }
-        } catch (Exception e) {
+            log.error("Error Getting User: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
     }

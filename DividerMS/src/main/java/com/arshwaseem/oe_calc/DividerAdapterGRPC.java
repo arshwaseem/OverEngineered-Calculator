@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
-public class DividerAdapterGRPC extends DividerServiceGrpc.DividerServiceImplBase {
+public class DividerAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(DividerAdapterGRPC.class);
     private final DividerSevice dividerService;
@@ -22,7 +22,7 @@ public class DividerAdapterGRPC extends DividerServiceGrpc.DividerServiceImplBas
     }
 
     @Override
-    public void divide(DivideRequest request, StreamObserver<DivideResponse> responseObserver){
+    public void divide(OperationRequest request, StreamObserver<OperationResponse> responseObserver){
         try{
             double numA = request.getNumA();
             double numB = request.getNumB();
@@ -38,7 +38,7 @@ public class DividerAdapterGRPC extends DividerServiceGrpc.DividerServiceImplBas
 
             double result = dividerService.Divider(numA, numB);
 
-            DivideResponse divideResponse = DivideResponse.newBuilder().setResult(result).build();
+            OperationResponse divideResponse = OperationResponse.newBuilder().setResult(result).build();
 
             History CalcHistory = new History();
             CalcHistory.setNumA(numA);
