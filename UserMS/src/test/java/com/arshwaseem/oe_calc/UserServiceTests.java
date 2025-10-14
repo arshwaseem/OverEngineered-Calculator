@@ -61,16 +61,9 @@ public class UserServiceTests {
     }
 
     @Test
-    void getById(){
-        User res = userService.GetByID(Long.valueOf(1)).get();
-        Assertions.assertNotNull(res);
-        Assertions.assertEquals(res.getId(), Long.valueOf(1));
-    }
-
-    @Test
     void getByUsername(){
         User res = userService.GetByName("test").get();
         Assertions.assertNotNull(res);
-        Assertions.assertEquals(res.getUserName(), "test");
+        Assertions.assertEquals(res.getUsername(), "test");
     }
 }

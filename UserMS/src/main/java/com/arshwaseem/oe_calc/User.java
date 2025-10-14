@@ -12,19 +12,19 @@ public class User {
     private Long id;
 
     @Column(name="username")
-    public String userName;
+    public String username;
     @Column(name="password")
     public String password;
     @Column(name = "lastresult")
     public double lastResult;
 
 
-    public String getUserName() {
-        return userName;
+    public String getUsername() {
+        return username;
     }
 
-    public void setUserName(String userName) {
-        this.userName = userName;
+    public void setUsername(String userName) {
+        this.username = userName;
     }
 
     public String getPassword() {

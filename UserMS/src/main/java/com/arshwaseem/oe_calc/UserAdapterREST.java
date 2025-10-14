@@ -21,7 +21,7 @@ public class UserAdapterREST {
     @PostMapping("/register")
     public ResponseEntity<User> RegisterUser(User user) {
         try{
-            if(userService.userExists(user.getUserName())){
+            if(userService.userExists(user.getUsername())){
                 throw new RuntimeException("User already exists");
             }
             userService.AddUser(user);
@@ -32,13 +32,13 @@ public class UserAdapterREST {
         }
     }
 
-    @DeleteMapping
+    @DeleteMapping("/delete")
     public ResponseEntity<User> DeleteUser(User user) {
         try{
-            if(!userService.userExists(user.getUserName())){
+            if(!userService.userExists(user.getUsername())){
                 throw new RuntimeException("User does not exist");
             }
-            userService.DeleteUser(user.getUserName());
+            userService.DeleteUser(user.getUsername());
             return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
         }catch (Exception e) {
             log.error("Error Deleting User: " + e.getMessage());
@@ -46,7 +46,7 @@ public class UserAdapterREST {
         }
     }
 
-    @GetMapping
+    @GetMapping("/username")
     public ResponseEntity<User> GetUserByName(@RequestBody String userName) {
         try{
             Optional<User> result = userService.GetByName(userName);
