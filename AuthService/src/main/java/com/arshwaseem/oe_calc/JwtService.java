@@ -59,6 +59,7 @@ public class JwtService {
 
     public boolean validateToken(String token){
         try{
+            log.info("Validating token: {}", token);
             Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()

@@ -14,7 +14,7 @@ public class UserService implements UserUseCases{
 
     @Override
     public Optional<User> GetByName(String name) {
-        return userJPARepository.findByUserName(name);
+        return userJPARepository.findByusername(name);
     }
 
     @Override
@@ -24,13 +24,13 @@ public class UserService implements UserUseCases{
 
     @Override
     public boolean userExists(String userName) {
-        Optional<User> user = userJPARepository.findByUserName(userName);
+        Optional<User> user = userJPARepository.findByusername(userName);
         return user.isPresent();
     }
 
     @Override
     public void DeleteUser(String name){
-        userJPARepository.deleteByUserName(name);
+        userJPARepository.deleteByusername(name);
     }
 
 }

@@ -27,6 +27,7 @@ public class AdderAdapterGRPC extends OperationServiceGrpc.OperationServiceImplB
     public void add(OperationRequest request, StreamObserver<OperationResponse> responseObserver) {
 
         try{
+            log.debug("Adding after receiving grpc request");
             double numA =  request.getNumA();
             double numB = request.getNumB();
             double result = adderService.Add(numA, numB);

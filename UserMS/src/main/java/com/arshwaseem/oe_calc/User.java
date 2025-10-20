@@ -15,8 +15,6 @@ public class User {
     public String username;
     @Column(name="password")
     public String password;
-    @Column(name = "lastresult")
-    public double lastResult;
 
 
     public String getUsername() {
@@ -33,14 +31,6 @@ public class User {
 
     public void setPassword(String password) {
         this.password = password;
-    }
-
-    public double getLastResult() {
-        return lastResult;
-    }
-
-    public void setLastResult(double lastResult) {
-        this.lastResult = lastResult;
     }
 
     public Long getId() {

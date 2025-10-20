@@ -29,7 +29,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/auth/login",
             "/auth/logout",
             "/auth/refresh",
-            "/auth/validate"
+            "/auth/validate",
+            "/api/auth/register",
+            "/api/auth/login",
+            "/api/auth/logout",
+            "/api/auth/refresh",
+            "/api/auth/validate"
     );
     private final CookieUtil cookieUtil;
 
@@ -53,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            TokenValidationResponse res = authServiceClient.validateToken(token);
+            TokenValidationResponse res = authServiceClient.validateToken(token, request);
 
             if(!res.isValid()){
                 log.error("Invalid token");

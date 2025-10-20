@@ -19,9 +19,6 @@ public class History {
     @Column(name="result")
     double result;
 
-    @Column(name="userid")
-    private long userId;
-
     @Column(name="timestamp")
     Timestamp timeStamp;
 
@@ -63,14 +60,6 @@ public class History {
 
     public void setResult(double result) {
         this.result = result;
-    }
-
-    public long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(long userId) {
-        this.userId = userId;
     }
 
     public Timestamp getTimeStamp() {

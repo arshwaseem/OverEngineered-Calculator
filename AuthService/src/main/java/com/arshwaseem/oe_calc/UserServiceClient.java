@@ -24,13 +24,13 @@ public class UserServiceClient {
         try{
             return webClientBuilder.build()
                     .get()
-                    .uri(userServiceProperties.getUrl() + "/user/username", username)
+                    .uri(userServiceProperties.getUrl() + "/user/username?username=" + username)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
                     .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e){
-            log.error("Error Fetching From User Service: "+e.getMessage());
+            log.error("Error Fetching From User Service: {}", e.getMessage());
             return null;
         }
     }

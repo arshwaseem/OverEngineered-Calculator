@@ -6,10 +6,12 @@ import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.grpc.server.service.GrpcService;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 
+@GrpcService
 public class MultiplierAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(MultiplierAdapterGRPC.class);

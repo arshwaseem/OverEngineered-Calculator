@@ -20,7 +20,7 @@ import java.time.Duration;
 import java.util.Arrays;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/auth")
 @RequiredArgsConstructor
 @Slf4j
 public class AuthProxyController {
@@ -96,7 +96,7 @@ public class AuthProxyController {
             ResponseEntity<Object> response = webClientBuilder.build()
                     .post()
                     .uri(authServiceProperties.getUrl()+"/auth/refresh")
-                    .header(HttpHeaders.SET_COOKIE, cookieHeader)
+                    .header(HttpHeaders.COOKIE, cookieHeader)
                     .contentType(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .toEntity(Object.class)

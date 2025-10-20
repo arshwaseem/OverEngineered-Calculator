@@ -35,7 +35,7 @@ public class CookieUtil {
 
     public Cookie createRefreshTokenCookie(String token) {
         Cookie cookie = new Cookie(REFRESH_TOKEN_COOKIE,token);
-        cookie.setPath("/auth/refresh");
+        cookie.setPath("/");
         cookie.setHttpOnly(cookieProperties.isHttpOnly());
         cookie.setSecure(cookieProperties.isSecure());
         cookie.setMaxAge(cookieProperties.getRefreshInterval());
@@ -91,7 +91,7 @@ public class CookieUtil {
 
 
         Cookie refreshCookie = new Cookie(REFRESH_TOKEN_COOKIE, null);
-        refreshCookie.setPath("/api/auth/refresh");
+        refreshCookie.setPath("/");
         refreshCookie.setMaxAge(0);
         refreshCookie.setHttpOnly(true);
         response.addCookie(refreshCookie);

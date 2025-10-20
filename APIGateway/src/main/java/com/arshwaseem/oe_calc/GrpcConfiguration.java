@@ -2,12 +2,18 @@ package com.arshwaseem.oe_calc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import lombok.Data;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
+@Data
 public class GrpcConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(GrpcConfiguration.class);
 
     @Value("${grpc.add.host:add-service}")
     private String addHost;
@@ -27,6 +33,7 @@ public class GrpcConfiguration {
     private int dividePort;
 
     public OperationServiceGrpc.OperationServiceBlockingStub newStub(String host, int port){
+        log.info("Creating gRPC stub to host: {} port: {}", host, port);
         ManagedChannel channel = ManagedChannelBuilder
                 .forAddress(host, port)
                 .usePlaintext()

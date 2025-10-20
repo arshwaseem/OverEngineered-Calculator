@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/op")
+@RequestMapping("/api/op")
 public class OperationsController {
 
     private static final Logger log = LoggerFactory.getLogger(OperationsController.class);
@@ -22,7 +22,10 @@ public class OperationsController {
     @PostMapping("/add")
     public ResponseEntity<?> Add(@RequestBody OperationRequestDTO operationRequestDTO) {
         try{
+            log.debug("Recieved numA: " + operationRequestDTO.getNumA());
+            log.debug("Recieved numB: " + operationRequestDTO.getNumB());
             Double result = operationsService.Add(operationRequestDTO.getNumA(), operationRequestDTO.getNumB());
+            log.debug("Result: " + result);
             return ResponseEntity.ok().body(result);
         } catch (Exception e){
             log.error(e.getMessage());

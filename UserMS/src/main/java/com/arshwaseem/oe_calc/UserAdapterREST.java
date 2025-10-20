@@ -19,13 +19,17 @@ public class UserAdapterREST {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<User> RegisterUser(User user) {
+    public ResponseEntity<User> RegisterUser(@RequestBody UserDTO userDto) {
         try{
-            if(userService.userExists(user.getUsername())){
+            if(userService.userExists(userDto.getUsername())){
                 throw new RuntimeException("User already exists");
             }
-            userService.AddUser(user);
-            return ResponseEntity.status(HttpStatus.CREATED).body(user);
+            User res = new User();
+            res.setUsername(userDto.getUsername());
+            res.setPassword(userDto.getPassword());
+
+            userService.AddUser(res);
+            return ResponseEntity.status(HttpStatus.CREATED).body(res);
         } catch (Exception e) {
             log.error("Error Registering User: " + e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
@@ -33,7 +37,7 @@ public class UserAdapterREST {
     }
 
     @DeleteMapping("/delete")
-    public ResponseEntity<User> DeleteUser(User user) {
+    public ResponseEntity<User> DeleteUser(@RequestBody UserDTO user) {
         try{
             if(!userService.userExists(user.getUsername())){
                 throw new RuntimeException("User does not exist");
@@ -47,9 +51,9 @@ public class UserAdapterREST {
     }
 
     @GetMapping("/username")
-    public ResponseEntity<User> GetUserByName(@RequestBody String userName) {
+    public ResponseEntity<User> GetUserByName(@RequestParam String username) {
         try{
-            Optional<User> result = userService.GetByName(userName);
+            Optional<User> result = userService.GetByName(username);
             if(result.isPresent()){
                 return ResponseEntity.status(HttpStatus.OK).body(result.get());
             }

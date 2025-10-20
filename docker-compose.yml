@@ -1,0 +1,186 @@
+services:
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    healthcheck:
+      test: ["CMD","rabbitmq-diagnostics","-q","ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+
+  postgres-users:
+    image: postgres:16
+    container_name: postgres-users
+    environment:
+      - POSTGRES_DB=users
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d users"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  postgres-history:
+    image: postgres:16
+    container_name: postgres-history
+    environment:
+      - POSTGRES_DB=history
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    ports:
+      - "5432:5432"
+
+    healthcheck:
+      test: ["CMD-SHELL","pg_isready -U postgres -d history"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  user-ms:
+    build:
+      context: ./UserMS
+    container_name: user-ms
+    depends_on:
+      postgres-users:
+        condition: service_healthy
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-users:5432/users
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=false
+
+  auth-service:
+    build:
+      context: ./AuthService
+    container_name: auth-service
+    depends_on:
+      - user-ms
+    environment:
+      - USER_SERVICE_URL=http://user-ms:8080
+      - JWT_SECRET=c80a6781f6ae1407704cc0221a857d666b7303139e65885f024745529b505595
+      - JWT_ISSUER=oe-calc
+      - JWT_ACCESS_EXPIRATIONSECONDS=900
+      - JWT_REFRESH_EXPIRATIONSECONDS=604800
+      - COOKIE_HTTPONLY=true
+      - COOKIE_SECURE=false
+      - COOKIE_SAMESITE=Lax
+      - COOKIE_MAXAGE=900
+      - COOKIE_REFRESHINTERVAL=604800
+      - LOGGING_LEVEL_ROOT=DEBUG
+
+  subtractor-ms:
+    build:
+      context: ./SubtractorMS
+    container_name: subtractor-ms
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+
+  multiplier-ms:
+    build:
+      context: ./MultiplierMS
+    container_name: multiplier-ms
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+
+  divider-ms:
+    build:
+      context: ./DividerMS
+    container_name: divider-ms
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+
+  adder-ms:
+    build:
+      context: ./AdderMS
+    container_name: adder-ms
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      - LOGGING_LEVEL_ROOT=DEBUG
+    ports:
+      - "9090:9090"
+
+  history-ms:
+    build:
+      context: ./HistoryMS
+    container_name: history-ms
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      postgres-history:
+        condition: service_healthy
+    environment:
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-history:5432/history
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=postgres
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=update
+      - SPRING_JPA_SHOW_SQL=false
+
+  api-gateway:
+    build:
+      context: ./APIGateway
+    container_name: api-gateway
+    depends_on:
+      - auth-service
+      - adder-ms
+      - subtractor-ms
+      - multiplier-ms
+      - divider-ms
+    environment:
+      - GRPC_ADD_HOST=adder-ms
+      - GRPC_ADD_PORT=9090
+      - GRPC_SUBTRACT_HOST=subtractor-ms
+      - GRPC_SUBTRACT_PORT=9090
+      - GRPC_MULTIPLY_HOST=multiplier-ms
+      - GRPC_MULTIPLY_PORT=9090
+      - GRPC_DIVIDE_HOST=divider-ms
+      - GRPC_DIVIDE_PORT=9090
+      - AUTH_SERVICE_URL=http://auth-service:8080
+      - LOGGING_LEVEL_ROOT=DEBUG
+
+    ports:
+      - "27015:8080"
+
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    depends_on:
+      - api-gateway
+    ports:
+      - "80:80"

@@ -15,6 +15,7 @@ public class OperationsService {
 
     public Double Add(Double numA, Double numB){
         try{
+            log.debug("Performing Addition");
             return operationsClientPort.Add(numA,numB);
         } catch (Exception e){
             log.error(e.getMessage());

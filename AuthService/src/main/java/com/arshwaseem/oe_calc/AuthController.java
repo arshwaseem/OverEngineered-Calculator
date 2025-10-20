@@ -76,6 +76,7 @@ public class AuthController {
                                 .build());
             }
 
+            log.info("Token found in cookie,validating..... : {}", token);
             TokenValidationResponse res = authService.validateToken(token);
             return ResponseEntity.status(HttpStatus.OK).body(res);
         } catch (Exception e) {

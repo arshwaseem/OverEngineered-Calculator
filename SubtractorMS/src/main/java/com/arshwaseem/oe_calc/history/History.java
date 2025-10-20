@@ -8,7 +8,6 @@ public class History {
     double numA;
     double numB;
     double result;
-    private long userId;
     Timestamp timeStamp;
 
     public long getId() {
@@ -49,14 +48,6 @@ public class History {
 
     public void setResult(double result) {
         this.result = result;
-    }
-
-    public long getUserId() {
-        return userId;
-    }
-
-    public void setUserId(long userId) {
-        this.userId = userId;
     }
 
     public Timestamp getTimeStamp() {
