@@ -1,0 +1,43 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/arshwaseem/api-gateway
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+env:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+
+  adder-ms:
+    host: adder-ms
+    port: 9090
+
+  subtractor-ms:
+    host: subtractor-ms
+    port: 9090
+
+  multiplier-ms:
+    host: multiplier-ms
+    port: 9090
+
+  divider-ms:
+    host: divider-ms
+    port: 9090
+
+  auth:
+    host: auth
+    port: 8080
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi

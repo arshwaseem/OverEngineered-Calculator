@@ -1,0 +1,39 @@
+dependencies:
+- name: rabbitmq
+  repository: file://../charts/rabbitmq
+  version: 0.1.0
+- name: cnpg-postgres-users
+  repository: file://../charts/cnpg-postgres-users
+  version: 0.1.0
+- name: cnpg-postgres-history
+  repository: file://../charts/cnpg-postgres-history
+  version: 0.1.0
+- name: user-ms
+  repository: file://../charts/user-ms
+  version: 0.1.0
+- name: history-ms
+  repository: file://../charts/history-ms
+  version: 0.1.0
+- name: auth
+  repository: file://../charts/auth
+  version: 0.1.0
+- name: adder-ms
+  repository: file://../charts/adder-ms
+  version: 0.1.0
+- name: subtractor-ms
+  repository: file://../charts/subtractor-ms
+  version: 0.1.0
+- name: multiplier-ms
+  repository: file://../charts/multiplier-ms
+  version: 0.1.0
+- name: divider-ms
+  repository: file://../charts/divider-ms
+  version: 0.1.0
+- name: api-gateway
+  repository: file://../charts/api-gateway
+  version: 0.1.0
+- name: frontend
+  repository: file://../charts/frontend
+  version: 0.1.0
+digest: sha256:40e5aa4356f6adb1c049a9ce909f4958845ee37246c943def6983880ab010cf9
+generated: "2025-10-23T21:12:15.489881465+04:00"

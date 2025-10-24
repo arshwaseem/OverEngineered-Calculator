@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+
+kind: Deployment
+
+metadata:
+  name: {{ include "multiplier-ms.fullname" . }}
+  labels: {{- include "multiplier-ms.labels" . | nindent 4 }}
+
+spec:
+  replicas: {{.Values.replicaCount}}
+  selector:
+    matchLabels:
+      {{- include "multiplier-ms.selectorLabels" . | nindent 6}}
+  template:
+    metadata:
+      labels:
+        {{- include "multiplier-ms.selectorLabels" . | nindent 8}}
+    spec:
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z -v -w30 {{ .Release.Name }}-{{ .Values.env.rabbitmq.host }} {{ .Values.env.rabbitmq.port }}; do
+                echo "Waiting for RabbitMQ connection..."
+                sleep 5
+              done
+              echo "RabbitMQ is Ready......"
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.service.grpcPort }}
+              protocol: TCP
+          env:
+            - name: SPRING_RABBITMQ_HOST
+              value: "{{ .Release.Name }}-{{ .Values.env.rabbitmq.host }}"
+            - name: SPRING_RABBITMQ_PORT
+              value: "{{ .Values.env.rabbitmq.port }}"
+            - name: SPRING_RABBITMQ_USERNAME
+              value: "{{ .Values.env.rabbitmq.username }}"
+            - name: SPRING_RABBITMQ_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "multiplier-ms.fullname" . }}-secret
+                  key: rabbitmq-password
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

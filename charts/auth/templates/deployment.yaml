@@ -1,0 +1,62 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "auth.fullname" . }}
+  labels:
+    {{- include "auth.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "auth.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "auth.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: wait-for-userms
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              until nc -z {{ .Release.Name }}-{{ index .Values.env "user-ms" "host" }} {{ index .Values.env "user-ms" "port" }}; do
+              echo "Waiting for User MS to be available..."
+              sleep 5
+              done
+              echo "User MS is available."
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: USER_SERVICE_URL
+              value: http://{{ .Release.Name }}-{{ index .Values.env "user-ms" "host" }}:{{ index .Values.env "user-ms" "port" }}
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "auth.fullname" . }}-secret
+                  key: jwt-secret
+            - name: JWT_ISSUER
+              value: {{ .Values.env.jwt.issuer }}
+            - name: JWT_ACCESS_EXPIRATIONSECONDS
+              value: {{ .Values.env.jwt.expiration | quote }}
+            - name: JWT_REFRESH_EXPIRATIONSECONDS
+              value: {{ .Values.env.jwt.refreshExpiration | quote }}
+            - name: COOKIE_HTTPONLY
+              value: {{ .Values.env.jwt.httpOnly | quote }}
+            - name: COOKIE_SECURE
+              value: {{ .Values.env.jwt.secure | quote }}
+            - name: COOKIE_SAMESITE
+              value: {{ .Values.env.jwt.sameSite }}
+            - name: COOKIE_MAXAGE
+              value: {{ .Values.env.jwt.maxAge | quote }}
+            - name: COOKIE_REFRESHINTERVAL
+              value: {{ .Values.env.jwt.refreshInterval | quote }}    
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}

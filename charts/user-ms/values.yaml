@@ -1,0 +1,25 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/arshwaseem/user-ms
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+
+database:
+  host: postgres-users-rw
+  port: 5432
+  name: users
+  secretName: postgres-users-app
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi

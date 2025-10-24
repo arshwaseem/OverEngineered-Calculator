@@ -1,0 +1,5 @@
+apiVersion: v2
+name: adder-ms
+version: 0.1.0
+description: Adder microservice using GRPC build in Java Springboot
+appVersion: "1.0.0"

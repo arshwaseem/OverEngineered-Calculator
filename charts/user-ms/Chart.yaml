@@ -1,0 +1,5 @@
+apiVersion: v2
+name: user-ms
+version: 0.1.0
+description: User microservice that handles user CRUD operations using Java Springboot
+appVersion: "1.0.0"

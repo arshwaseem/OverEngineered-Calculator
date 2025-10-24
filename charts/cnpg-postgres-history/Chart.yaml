@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cnpg-postgres-history
+description: A Helm chart for deploying a cnpg cluster for the history service
+version: 0.1.0
+appVersion: "16"
+keywords:
+  - postgresql
+  - database
+  - cnpg

@@ -1,0 +1,25 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/arshwaseem/multiplier-ms
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  grpcPort: 9090
+
+env:
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi

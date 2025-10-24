@@ -1,0 +1,16 @@
+apiVersion: v1
+
+kind: Service
+metadata:
+  name: {{ include "multiplier-ms.fullname" . }}
+  labels:
+    {{- include "multiplier-ms.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+    - port: {{ .Values.service.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "multiplier-ms.selectorLabels" . | nindent 4 }}

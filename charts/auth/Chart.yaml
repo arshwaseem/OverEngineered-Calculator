@@ -1,0 +1,5 @@
+apiVersion: v2
+name: auth
+description: A Helm chart for auth service written in Java Spring Boot
+version: 0.1.0
+appVersion: "1.0.0"

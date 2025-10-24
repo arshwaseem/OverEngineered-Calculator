@@ -1,0 +1,34 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+
+metadata:
+  name: {{ .Values.clusterName }}
+spec:
+  instances: {{ .Values.instances }}
+
+  imageName: ghcr.io/cloudnative-pg/postgresql:{{ .Values.postgresql.version }}
+
+  storage:
+    size: {{ .Values.storage.size }}
+    {{- if .Values.storage.storageClass }}
+    storageClass: {{ .Values.storage.storageClass }}
+    {{- end }}
+
+  bootstrap:
+    initdb:
+      database: {{ .Values.database.name }}
+      owner: {{ .Values.database.owner }}
+      localeCollate: {{ .Values.bootstrap.initdb.localeCollate }}
+      localeCType: {{ .Values.bootstrap.initdb.localeCType }}
+
+  postgresql:
+    parameters:
+      {{- toYaml .Values.postgresql.parameters | nindent 6 }}
+
+  {{- if .Values.monitoring.enabled }}
+  monitoring:
+    enablePodMonitor: true
+  {{- end }}
+
+  resources:
+    {{- toYaml .Values.resources | nindent 4 }}

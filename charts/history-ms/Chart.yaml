@@ -1,0 +1,5 @@
+apiVersion: v2
+name: history-ms
+version: 0.1.0
+description: History microservice that handles user CRUD operations using Java Springboot
+appVersion: "1.0.0"

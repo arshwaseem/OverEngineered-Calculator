@@ -1,0 +1,66 @@
+apiVersion: v2
+name: oe-calculator
+description: Over-Engineered Calculator - Complete Microservices Application
+version: 0.1.0
+appVersion: "1.0.0"
+
+dependencies:
+  - name: rabbitmq
+    version: 0.1.0
+    repository: "file://../charts/rabbitmq"
+    condition: rabbitmq.enabled
+
+  - name: cnpg-postgres-users
+    version: 0.1.0
+    repository: "file://../charts/cnpg-postgres-users"
+    condition: cnpg-postgres-users.enabled
+
+  - name: cnpg-postgres-history
+    version: 0.1.0
+    repository: "file://../charts/cnpg-postgres-history"
+    condition: cnpg-postgres-history.enabled
+
+  - name: user-ms
+    version: 0.1.0
+    repository: "file://../charts/user-ms"
+    condition: user-ms.enabled
+
+  - name: history-ms
+    version: 0.1.0
+    repository: "file://../charts/history-ms"
+    condition: history-ms.enabled
+
+  - name: auth
+    version: 0.1.0
+    repository: "file://../charts/auth"
+    condition: auth.enabled
+
+  - name: adder-ms
+    version: 0.1.0
+    repository: "file://../charts/adder-ms"
+    condition: adder-ms.enabled
+
+  - name: subtractor-ms
+    version: 0.1.0
+    repository: "file://../charts/subtractor-ms"
+    condition: subtractor-ms.enabled
+
+  - name: multiplier-ms
+    version: 0.1.0
+    repository: "file://../charts/multiplier-ms"
+    condition: multiplier-ms.enabled
+
+  - name: divider-ms
+    version: 0.1.0
+    repository: "file://../charts/divider-ms"
+    condition: divider-ms.enabled
+
+  - name: api-gateway
+    version: 0.1.0
+    repository: "file://../charts/api-gateway"
+    condition: api-gateway.enabled
+
+  - name: frontend
+    version: 0.1.0
+    repository: "file://../charts/frontend"
+    condition: frontend.enabled

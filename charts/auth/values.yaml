@@ -1,0 +1,31 @@
+replicaCount: 2
+image:
+  repository: ghcr.io/arshwaseem/auth
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+env:
+  user-ms:
+    host: user-ms
+    port: 8080
+  jwt:
+    expiration: 900
+    issuer: oe-calc
+    refreshExpiration: 604800
+    httpOnly: true
+    secure: false
+    sameSite: Lax
+    maxAge: 900
+    refreshInterval: 604800
+
+resources:
+  limits:
+    cpu: 500m
+    memory: 512Mi
+  requests:
+    cpu: 200m
+    memory: 256Mi

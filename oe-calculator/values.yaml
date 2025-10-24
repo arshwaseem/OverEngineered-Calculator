@@ -1,0 +1,182 @@
+global:
+  imageRegistry: ghcr.io/arshwaseem
+  imagePullPolicy: IfNotPresent
+  environment: dev
+
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: rabbitmq
+    tag: 3-management
+    pullPolicy: IfNotPresent
+
+  service:
+    amqpPort: 5672
+    managementPort: 15672
+
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: local-path
+
+cnpg-postgres-users:
+  enabled: true
+  clusterName: postgres-users
+  instances: 2
+  storage:
+    size: 1Gi
+    storageClass: local-path
+  database:
+    name: users
+    owner: app
+
+cnpg-postgres-history:
+  enabled: true
+  clusterName: postgres-history
+  instances: 2
+  storage:
+    size: 1Gi
+    storageClass: local-path
+  database:
+    name: history
+    owner: app
+
+user-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/user-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  database:
+    host: postgres-users-rw
+    port: 5432
+    name: users
+    secret: postgres-users-app
+
+history-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/history-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  database:
+    host: postgres-history-rw
+    port: 5432
+    name: history
+    secret: postgres-history-app
+
+auth:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/auth
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    user-ms:
+      host: user-ms
+      port: 8080
+
+adder-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/adder-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: guest
+
+subtractor-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/subtractor-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: guest
+
+multiplier-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/multiplier-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: guest
+
+divider-ms:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/divider-ms
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: guest
+
+api-gateway:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/api-gateway
+    tag: latest
+    pullPolicy: IfNotPresent
+  env:
+    rabbitmq:
+      host: rabbitmq
+      port: 5672
+      username: guest
+
+    adder-ms:
+      host: adder-ms
+      port: 9090
+
+    subtractor-ms:
+      host: subtractor-ms
+      port: 9090
+
+    multiplier-ms:
+      host: multiplier-ms
+      port: 9090
+
+    divider-ms:
+      host: divider-ms
+      port: 9090
+
+    auth:
+      host: auth
+      port: 8080
+
+frontend:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: ghcr.io/arshwaseem/overengineered-calculator/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 80
+  api-gateway:
+    host: api-gateway
+    port: 8080
+  

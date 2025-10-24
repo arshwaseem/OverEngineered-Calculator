@@ -1,0 +1,5 @@
+apiVersion: v2
+name: divider-ms
+version: 0.1.0
+description: Divider microservice using GRPC build in Java Springboot
+appVersion: "1.0.0"

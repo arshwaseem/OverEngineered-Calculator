@@ -1,0 +1,24 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/arshwaseem/frontend
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 80
+    nodePort: 30080
+
+api-gateway:
+  host: api-gateway
+  port: 8080
+
+resources:
+    limits:
+        cpu: 100m
+        memory: 128Mi
+    requests:
+        cpu: 100m
+        memory: 128Mi

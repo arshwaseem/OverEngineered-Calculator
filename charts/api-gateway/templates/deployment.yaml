@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "api-gateway.fullname" . }}
+  labels:
+    {{- include "api-gateway.labels" . | nindent 4 }}
+
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "api-gateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "api-gateway.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: wait-for-all-services
+          image: busybox:latest
+          command:
+              - sh
+              - -c
+              - |
+                until nc -z -v -w30 {{ .Release.Name }}-{{ index .Values.env "auth" "host" }} {{ index .Values.env "auth" "port" }}; do
+                 echo "Waiting for auth service connection..."
+                 sleep 5
+                done
+                echo "Connected to auth service!"
+                until nc -z -v -w30 {{ .Release.Name }}-{{ index .Values.env "adder-ms" "host" }} {{ index .Values.env "adder-ms" "port" }}; do
+                  echo "Waiting for adder microservice connection..."
+                  sleep 5
+                done
+                echo "Connected to adder microservice!"
+                until nc -z -v -w30 {{ .Release.Name }}-{{ index .Values.env "subtractor-ms" "host" }} {{ index .Values.env "subtractor-ms" "port" }}; do
+                  echo "Waiting for subtractor microservice connection..."
+                  sleep 5
+                done
+                echo "Connected to subtractor microservice!"
+                until nc -z -v -w30 {{ .Release.Name }}-{{ index .Values.env "multiplier-ms" "host" }} {{ index .Values.env "multiplier-ms" "port" }}; do
+                  echo "Waiting for multiplier microservice connection..."
+                  sleep 5
+                done
+                echo "Connected to multiplier microservice!"
+                until nc -z -v -w30 {{ .Release.Name }}-{{ index .Values.env "divider-ms" "host" }} {{ index .Values.env "divider-ms" "port" }}; do
+                  echo "Waiting for divider microservice connection..."
+                  sleep 5
+                done
+                echo "Connected to divider microservice!"
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: {{ .Values.service.port }}
+              name: http
+              protocol: TCP
+          env:
+            - name: GRPC_ADD_HOST
+              value: {{ .Release.Name }}-{{ index .Values.env "adder-ms" "host" }}
+            - name: GRPC_ADD_PORT
+              value: {{ index .Values.env "adder-ms" "port" | quote }}
+            - name: GRPC_SUBTRACT_HOST
+              value: {{ .Release.Name }}-{{ index .Values.env "subtractor-ms" "host" }}
+            - name: GRPC_SUBTRACT_PORT
+              value: {{ index .Values.env "subtractor-ms" "port" | quote }}
+            - name: GRPC_MULTIPLY_HOST
+              value: {{ .Release.Name }}-{{ index .Values.env "multiplier-ms" "host" }}
+            - name: GRPC_MULTIPLY_PORT
+              value: {{ index .Values.env "multiplier-ms" "port" | quote }}
+            - name: GRPC_DIVIDE_HOST
+              value: {{ .Release.Name }}-{{ index .Values.env "divider-ms" "host" }}
+            - name: GRPC_DIVIDE_PORT
+              value: {{ index .Values.env "divider-ms" "port" | quote }}
+            - name: AUTH_SERVICE_URL
+              value: http://{{ .Release.Name }}-{{ index .Values.env "auth" "host" }}:{{ index .Values.env "auth" "port" }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
