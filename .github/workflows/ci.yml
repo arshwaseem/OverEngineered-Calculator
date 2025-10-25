@@ -135,6 +135,17 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: false
 
+      - name: Make image public on GHCR
+        run: |
+          echo "Setting visibility=public for ${{ matrix.service }}"
+          gh api \
+            --method PATCH \
+            -H "Accept: application/vnd.github+json" \
+            /user/packages/container/${{ matrix.service }}/visibility \
+            -f visibility=public
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
   docker-frontend:
     name: Docker Frontend
     runs-on: ubuntu-latest
