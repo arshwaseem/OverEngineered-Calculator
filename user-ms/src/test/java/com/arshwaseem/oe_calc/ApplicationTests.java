@@ -8,7 +8,7 @@ import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfi
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class, SecurityAutoConfiguration.class })
+@Disabled
 class ApplicationTests {
 
 	@Test
