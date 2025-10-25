@@ -1,0 +1,227 @@
+name: CI Pipeline for Overengineered Calculator
+
+on:
+  push:
+    branches:
+      - main
+      - ci-pipeline
+      - observability
+  pull_request:
+    branches:
+      - main
+
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: arshwaseem/overengineered-calculator
+
+jobs:
+  #Building with maven
+  build:
+    name: build ${{ matrix.service }}
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        service:
+          - adder-ms
+          - subtractor-ms
+          - multiplier-ms
+          - divider-ms
+          - api-gateway
+          - history-ms
+          - auth
+          - user-ms
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build with maven
+        working-directory: ./${{ matrix.service }}
+        run: mvn clean package
+
+      - name: Upload Jar Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.service }}-jar
+          path: ./{{ matrix.service }}/target/*.jar
+          retention-days: 1
+          if-no-files-found: error
+
+#Build and push container images to ghcr
+  docker-java-services:
+    name: Docker ${{ matrix.service }}
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    strategy:
+      matrix:
+        service:
+          - adder-ms
+          - subtractor-ms
+          - divider-ms
+          - multiplier-ms
+          - api-gateway
+          - auth
+          - user-ms
+          - history-ms
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: download jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.service }}-jar
+          path: ./${{ matrix.service }}/target
+
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: login to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: extract docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: create optimized docker file for CI
+        working-directory: ./${{ matrix.service }}
+        run: |
+          cat > Dockerfile.ci <<'EOF'
+          FROM eclipse-temurin:17-jre
+          WORKDIR /app
+          ENV JAVA_OPTS=""
+          EXPOSE 8080
+          COPY target/*.jar /app/app.jar
+          ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app/app.jar"]
+          EOF
+
+      - name: build and push docker images
+        uses: docker/build-push-action@v5
+        with:
+          context: ./${{ matrix.service }}
+          file: ./${{ matrix.service }}/Dockerfile.ci
+          push: true
+          tags: ${{ steps.meta.output.tags }}
+          labels: ${{ steps.meta.output.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  docker-frontend:
+    name: Docker Frontend
+    runs-on: ubuntu-latest
+    if: github.event.name == 'push'
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: checkout code
+        uses: actions/checkout@v4
+
+      - name: download jar artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.service }}-jar
+          path: ./${{ matrix.service }}/target
+
+      - name: setup docker buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: login to container registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: extract docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          tags: |
+            type=ref,event=branch
+            type=sha,prefix={{branch}}-,format=short
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: build and push docker images
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: false
+
+  pipeline-success:
+    name: Pipeline Success
+    needs: [build, docker-java-services, docker-frontend]
+    runs-on: ubuntu-latest
+    if: github.event.name == 'push'
+
+    steps:
+      - name: extract branch name
+        id: branch
+        run: echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+
+      - name: Summary
+        run: |
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## ✅ Pipeline Success
+
+          All services built, tested, and pushed successfully!
+
+          ### 📦 Java Microservices
+          EOF
+          echo "Branch: \`${{ steps.branch.outputs.name }}\`" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+          | Service | Image |
+          |---------|-------|
+          EOF
+          echo "| Adder | \`ghcr.io/${{ env.IMAGE_PREFIX }}/adder-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Subtractor | \`ghcr.io/${{ env.IMAGE_PREFIX }}/subtractor-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Multiplier | \`ghcr.io/${{ env.IMAGE_PREFIX }}/multiplier-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Divider | \`ghcr.io/${{ env.IMAGE_PREFIX }}/divider-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| API Gateway | \`ghcr.io/${{ env.IMAGE_PREFIX }}/api-gateway:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Auth | \`ghcr.io/${{ env.IMAGE_PREFIX }}/auth:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| User | \`ghcr.io/${{ env.IMAGE_PREFIX }}/user-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| History | \`ghcr.io/${{ env.IMAGE_PREFIX }}/history-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+          ### 🎨 Frontend
+          | Component | Image |
+          |-----------|-------|
+          EOF
+          echo "| Frontend | \`ghcr.io/${{ env.IMAGE_PREFIX }}/frontend:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
