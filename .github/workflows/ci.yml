@@ -162,7 +162,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/${{ matrix.service }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_PREFIX }}/frontend
           tags: |
             type=ref,event=branch
             type=sha,prefix={{branch}}-,format=short
