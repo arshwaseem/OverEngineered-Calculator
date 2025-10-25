@@ -12,6 +12,7 @@
         <module name="oe-calc (2)" />
         <module name="oe-calc (3)" />
         <module name="oe-calc (1)" />
+        <module name="oe-calc (8)" />
         <module name="MultiplierMS" />
         <module name="oe-calc (6)" />
         <module name="oe-calc (7)" />
@@ -22,9 +23,6 @@
         <module name="AdderMS" />
       </profile>
     </annotationProcessing>
-    <bytecodeTargetLevel>
-      <module name="oe-calc (8)" target="17" />
-    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
