@@ -45,7 +45,7 @@ public class HistoryServiceTests {
     @BeforeEach
     public void init(@Autowired JdbcTemplate jdbcTemplate) {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS history (id SERIAL PRIMARY KEY, serviceName VARCHAR(50) NOT NULL, numA DOUBLE PRECISION NOT NULL, numB DOUBLE PRECISION NOT NULL, result DOUBLE PRECISION NOT NULL ,timeStamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
-        jdbcTemplate.execute("INSERT INTO history (serviceName, numA, numB, result, userId, timeStamp) VALUES ('test', 1, 1, 2, CURRENT_TIMESTAMP)");
+        jdbcTemplate.execute("INSERT INTO history (serviceName, numA, numB, result, timeStamp) VALUES ('test', 1, 1, 2, CURRENT_TIMESTAMP)");
     }
 
     @AfterEach
