@@ -4,6 +4,7 @@ import org.hibernate.AssertionFailure;
 import org.jetbrains.annotations.NotNull;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @SpringBootTest
-@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class })
+@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class })
 public class HistoryServiceTests {
     public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
             .withUsername("test")
