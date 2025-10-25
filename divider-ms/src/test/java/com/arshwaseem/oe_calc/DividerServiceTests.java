@@ -18,6 +18,6 @@ public class DividerServiceTests {
         double numA = 12;
         double numB = 4;
 
-        Assertions.assertEquals((numA+numB),divider.Divider(numA,numB));
+        Assertions.assertEquals((numA/numB),divider.Divider(numA,numB));
     }
 }
