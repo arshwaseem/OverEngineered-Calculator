@@ -138,7 +138,7 @@ jobs:
   docker-frontend:
     name: Docker Frontend
     runs-on: ubuntu-latest
-    if: github.event.name == 'push'
+    if: github.event_name == 'push'
 
     permissions:
       contents: read
@@ -189,7 +189,7 @@ jobs:
     name: Pipeline Success
     needs: [build, docker-java-services, docker-frontend]
     runs-on: ubuntu-latest
-    if: github.event.name == 'push'
+    if: github.event_name == 'push'
 
     steps:
       - name: extract branch name
