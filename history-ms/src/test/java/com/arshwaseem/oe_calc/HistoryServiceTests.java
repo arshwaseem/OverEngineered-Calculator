@@ -19,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @SpringBootTest
-@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class })
+@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class, RabbitMQConfig.class })
 public class HistoryServiceTests {
     public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
             .withUsername("test")
