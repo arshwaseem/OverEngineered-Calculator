@@ -129,8 +129,8 @@ jobs:
           context: ./${{ matrix.service }}
           file: ./${{ matrix.service }}/Dockerfile.ci
           push: true
-          tags: ${{ steps.meta.output.tags }}
-          labels: ${{ steps.meta.output.labels }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
           provenance: false
