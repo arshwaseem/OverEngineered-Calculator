@@ -14,38 +14,74 @@ public class OperationsGRPCAdapter implements OperationsClientPort{
     private final OperationServiceGrpc.OperationServiceBlockingStub multiplyStub;
     private final OperationServiceGrpc.OperationServiceBlockingStub divideStub;
     private final GrpcConfiguration grpcConfiguration;
+    private final GatewayCustomMetrics gatewayCustomMetrics;
 
     @Override
     public Double Add(Double numA, Double numB) {
-        log.debug("GPRC Add request being performed");
-        log.debug("Adder Host is: {}",grpcConfiguration.getAddHost());
-        log.debug("Adder Port is: {}",grpcConfiguration.getAddPort());
-        try {
-            OperationRequest addRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
-            Double result = addStub.add(addRequest).getResult();
-            log.debug("GPRC Add result is: {}", result);
-            return result;
-        } catch (Exception e) {
-            log.error("Error performing grpc add: {}", e.getMessage());
-            return 0.0;
-        }
+
+        return gatewayCustomMetrics.recordGrpcCall(
+                "adder","add",
+                () -> {
+                    try {
+                        OperationRequest addRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
+                        Double result = addStub.add(addRequest).getResult();
+                        return result;
+                    } catch (Exception e) {
+                        log.error("Error performing grpc add: {}", e.getMessage());
+                        throw e;
+                    }
+                }
+        );
     }
 
     @Override
     public Double Subtract(Double numA, Double numB) {
-        OperationRequest subtractRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
-        return subtractStub.subtract(subtractRequest).getResult();
+        return gatewayCustomMetrics.recordGrpcCall(
+                "subtractor", "subtract",
+                () -> {
+                    try {
+                        OperationRequest subtractRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
+                        Double result = subtractStub.subtract(subtractRequest).getResult();
+                        return result;
+                    } catch (Exception e) {
+                        log.error("Error performing grpc subtract: {}", e.getMessage());
+                        throw e;
+                    }
+                }
+        );
     }
 
     @Override
     public Double Multiply(Double numA, Double numB) {
-        OperationRequest multiplyRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
-        return multiplyStub.multiply(multiplyRequest).getResult();
+        return gatewayCustomMetrics.recordGrpcCall(
+                "multiplier", "multiply",
+                () -> {
+                    try {
+                        OperationRequest multiplyRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
+                        Double result = multiplyStub.multiply(multiplyRequest).getResult();
+                        return result;
+                    } catch (Exception e) {
+                        log.error("Error performing grpc multiply: {}", e.getMessage());
+                        throw e;
+                    }
+                }
+        );
     }
 
     @Override
     public Double Divide(Double numA, Double numB) {
-        OperationRequest divideRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
-        return divideStub.divide(divideRequest).getResult();
+        return gatewayCustomMetrics.recordGrpcCall(
+                "divider", "divide",
+                () -> {
+                    try {
+                        OperationRequest divideRequest = OperationRequest.newBuilder().setNumA(numA).setNumB(numB).build();
+                        Double result = divideStub.divide(divideRequest).getResult();
+                        return result;
+                    } catch (Exception e) {
+                        log.error("Error performing grpc divide: {}", e.getMessage());
+                        throw e;
+                    }
+                }
+        );
     }
 }
