@@ -1,5 +1,6 @@
 package com.arshwaseem.oe_calc;
 
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
@@ -11,7 +12,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 @SpringBootTest
 @EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class })
 public class DividerServiceTests {
-    private DividerSevice divider = new DividerSevice();
+    private SimpleMeterRegistry meterRegistry = new SimpleMeterRegistry();
+    private DividerSevice divider = new DividerSevice(meterRegistry);
 
     @Test
     public void DividerTest() {
