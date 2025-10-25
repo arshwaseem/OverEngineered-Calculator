@@ -54,7 +54,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.service }}-jar
-          path: ./{{ matrix.service }}/target/*.jar
+          path: ./${{ matrix.service }}/target/*.jar
           retention-days: 1
           if-no-files-found: error
 
