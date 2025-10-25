@@ -6,6 +6,8 @@ on:
       - main
       - ci-pipeline
       - observability
+      - tracing
+      - e2e-testing
   pull_request:
     branches:
       - main
