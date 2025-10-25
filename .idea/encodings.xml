@@ -17,5 +17,13 @@
     <file url="file://$PROJECT_DIR$/SubtractorMS/src/main/resources" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/SubtractorMS/target/generated-sources/protobuf" charset="UTF-8" />
     <file url="file://$PROJECT_DIR$/UserMS/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/adder-ms/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/api-gateway/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/auth/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/divider-ms/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/history-ms/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/multiplier-ms/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/subtractor-ms/src/main/java" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/user-ms/src/main/java" charset="UTF-8" />
   </component>
 </project>

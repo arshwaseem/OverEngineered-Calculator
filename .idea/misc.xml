@@ -12,6 +12,14 @@
         <option value="$PROJECT_DIR$/HistoryMS/pom.xml" />
         <option value="$PROJECT_DIR$/AuthService/pom.xml" />
         <option value="$PROJECT_DIR$/APIGateway/pom.xml" />
+        <option value="$PROJECT_DIR$/adder-ms/pom.xml" />
+        <option value="$PROJECT_DIR$/api-gateway/pom.xml" />
+        <option value="$PROJECT_DIR$/auth/pom.xml" />
+        <option value="$PROJECT_DIR$/divider-ms/pom.xml" />
+        <option value="$PROJECT_DIR$/history-ms/pom.xml" />
+        <option value="$PROJECT_DIR$/multiplier-ms/pom.xml" />
+        <option value="$PROJECT_DIR$/subtractor-ms/pom.xml" />
+        <option value="$PROJECT_DIR$/user-ms/pom.xml" />
       </list>
     </option>
   </component>
