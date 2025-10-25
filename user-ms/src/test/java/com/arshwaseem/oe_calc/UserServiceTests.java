@@ -48,7 +48,7 @@ public class UserServiceTests {
         jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users(\n" +
                 "    id SERIAL PRIMARY KEY,\n" +
                 "    userName VARCHAR(50) NOT NULL UNIQUE,\n" +
-                "    password VARCHAR(255) NOT NULL,\n" +
+                "    password VARCHAR(255) NOT NULL\n" +
                 ")");
         jdbcTemplate.execute("INSERT INTO users(userName, password) VALUES ('test', 'test')");
     }
