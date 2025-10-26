@@ -6,8 +6,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class DividerAdapterREST {
-    private final DividerSevice dividerService;
-    public DividerAdapterREST(DividerSevice dividerService) {
+    private final DividerService dividerService;
+    public DividerAdapterREST(DividerService dividerService) {
         this.dividerService = dividerService;
     }
 

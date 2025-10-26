@@ -14,10 +14,10 @@ import java.time.LocalDateTime;
 public class DividerAdapterGRPC extends OperationServiceGrpc.OperationServiceImplBase {
 
     private static final Logger log = LoggerFactory.getLogger(DividerAdapterGRPC.class);
-    private final DividerSevice dividerService;
+    private final DividerService dividerService;
     private final HistoryService historyService;
 
-    public DividerAdapterGRPC(DividerSevice dividerService, HistoryService historyService) {
+    public DividerAdapterGRPC(DividerService dividerService, HistoryService historyService) {
 
         this.dividerService = dividerService;
         this.historyService = historyService;

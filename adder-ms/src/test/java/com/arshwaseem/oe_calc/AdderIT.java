@@ -10,7 +10,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
-import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.amqp.support.converter.MessageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -19,15 +18,12 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.RabbitMQContainer;
 import org.testcontainers.junit.jupiter.Container;
 
-import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootTest
-public class AdderIntegrationTests {
-
-    private static final Logger log = LoggerFactory.getLogger(AdderIntegrationTests.class);
+public class AdderIT {
 
     private final String queueName = "history-queue";
 
@@ -118,7 +114,6 @@ public class AdderIntegrationTests {
         adderHistoryService.PublishHistory(historyToPublish);
 
         boolean received = countDownLatch.await(10, TimeUnit.SECONDS);
-        log.info(String.valueOf(received));
         Assertions.assertTrue(received);
         Assertions.assertEquals(8.0,historyMessage.get().getResult());
         Assertions.assertEquals(5.0,historyMessage.get().getNumA());

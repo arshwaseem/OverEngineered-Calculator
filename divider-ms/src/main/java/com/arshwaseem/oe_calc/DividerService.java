@@ -9,24 +9,24 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
-public class DividerSevice implements DividerUseCases {
-    private static final Logger log = LoggerFactory.getLogger(DividerSevice.class);
+public class DividerService implements DividerUseCases {
+    private static final Logger log = LoggerFactory.getLogger(DividerService.class);
 
     private final MeterRegistry meterRegistry;
 
-    public DividerSevice(MeterRegistry meterRegistry) {
+    public DividerService(MeterRegistry meterRegistry) {
         this.meterRegistry = meterRegistry;
     }
 
     public double Divider(double numA, double numB) throws DivideException {
 
-        return Timer.builder("calculator.oprations.duration")
+        return Timer.builder("calculator.operations.duration")
                 .description("Duration of Calculator Operations")
                 .tag("operation","divide")
                 .register(meterRegistry)
                 .record(()-> {
                     try{
-                        Counter.builder("calculator.oprations.total")
+                        Counter.builder("calculator.operations.total")
                                 .description("Total Calculator Operations")
                                 .tag("operation","divide")
                                 .register(meterRegistry)
@@ -43,7 +43,7 @@ public class DividerSevice implements DividerUseCases {
                                 .tag("error",e.getClass().getSimpleName())
                                 .register(meterRegistry)
                                 .increment();
-                        return 0;
+                        throw e;
                     }
                 });
     }
