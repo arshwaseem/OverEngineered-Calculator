@@ -8,6 +8,7 @@ on:
       - observability
       - tracing
       - e2e-testing
+      - tests
   pull_request:
     branches:
       - main
