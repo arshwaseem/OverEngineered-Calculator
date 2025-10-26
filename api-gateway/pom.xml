@@ -124,13 +124,6 @@
 			<artifactId>junit-jupiter</artifactId>
 			<scope>test</scope>
 		</dependency>
-        <!-- For RabbitMQ testing (Arithmetic & History services) -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>rabbitmq</artifactId>
-            <version>1.21.3</version>
-            <scope>test</scope>
-        </dependency>
 
         <!-- WireMock (for Auth & API Gateway) -->
         <dependency>

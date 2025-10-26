@@ -104,14 +104,6 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- For RabbitMQ testing (Arithmetic & History services) -->
-        <dependency>
-            <groupId>org.testcontainers</groupId>
-            <artifactId>rabbitmq</artifactId>
-            <version>1.21.3</version>
-            <scope>test</scope>
-        </dependency>
-
         <!-- JUnit 5 Integration -->
         <dependency>
             <groupId>org.testcontainers</groupId>

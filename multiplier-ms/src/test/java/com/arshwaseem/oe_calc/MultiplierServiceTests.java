@@ -1,21 +1,15 @@
 package com.arshwaseem.oe_calc;
 
-import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-@EnableAutoConfiguration(exclude = { DataSourceAutoConfiguration.class, SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class })
 public class MultiplierServiceTests {
 
-    private SimpleMeterRegistry meterRegistry =  new SimpleMeterRegistry();
-    private MultiplierService multiplierService = new MultiplierService(meterRegistry);
+    private final SimpleMeterRegistry meterRegistry =  new SimpleMeterRegistry();
+    private final MultiplierService multiplierService = new MultiplierService(meterRegistry);
 
     @Test
     public void testMultiply() {

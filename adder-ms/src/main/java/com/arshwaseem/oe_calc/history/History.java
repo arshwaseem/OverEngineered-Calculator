@@ -1,10 +1,5 @@
 package com.arshwaseem.oe_calc.history;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-
 import java.sql.Timestamp;
 
 public class History {
