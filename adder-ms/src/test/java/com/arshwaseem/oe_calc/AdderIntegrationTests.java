@@ -1,0 +1,127 @@
+package com.arshwaseem.oe_calc;
+
+
+import com.arshwaseem.oe_calc.history.History;
+import com.arshwaseem.oe_calc.history.HistoryService;
+import io.grpc.ManagedChannel;
+import io.grpc.inprocess.InProcessChannelBuilder;
+import org.junit.jupiter.api.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.amqp.rabbit.listener.SimpleMessageListenerContainer;
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.containers.RabbitMQContainer;
+import org.testcontainers.junit.jupiter.Container;
+
+import java.util.Arrays;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+
+@SpringBootTest
+public class AdderIntegrationTests {
+
+    private static final Logger log = LoggerFactory.getLogger(AdderIntegrationTests.class);
+
+    private final String queueName = "history-queue";
+
+    @Autowired
+    private MessageConverter messageConverter;
+
+    @DynamicPropertySource
+    static void dynamicProperties(DynamicPropertyRegistry registry) {
+        registry.add("spring.grpc.server.inprocess.name", ()-> "test");
+        registry.add("spring.grpc.server.port", ()-> "-1");
+        registry.add("spring.rabbitmq.host", rabbitMQContainer::getHost);
+        registry.add("spring.rabbitmq.port", rabbitMQContainer::getAmqpPort);
+    }
+
+    @Autowired
+    AdderService adderService;
+
+    @Autowired
+    HistoryService adderHistoryService;
+
+    @Autowired
+    RabbitTemplate rabbitTemplate;
+
+    @Container
+    static RabbitMQContainer rabbitMQContainer;
+
+    private static ManagedChannel channel;
+    private static OperationServiceGrpc.OperationServiceBlockingStub blockingStub;
+
+    @BeforeAll
+    static void init() {
+        channel = InProcessChannelBuilder.forName("test").directExecutor().usePlaintext().build();
+        blockingStub = OperationServiceGrpc.newBlockingStub(channel);
+        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withExposedPorts(5672,15672);
+        rabbitMQContainer.start();
+    }
+
+    @AfterAll
+    static void shutdown() {
+        channel.shutdown();
+        rabbitMQContainer.stop();
+    }
+
+    @BeforeEach
+    void purgeQueue() {
+        rabbitTemplate.execute( channel1 -> {
+            channel1.queuePurge(queueName);
+            return null;
+        });
+    }
+
+    @Test
+    void add_ShouldReturnCorrectSumGrpc(){
+
+        OperationRequest operationRequest = OperationRequest.newBuilder().setNumA(5.0).setNumB(6.5).build();
+
+        OperationResponse operationResponse = blockingStub.add(operationRequest);
+
+        Assertions.assertEquals(11.5, operationResponse.getResult());
+    }
+
+    @Test
+    void add_ShouldPublishMessageToQueue() throws InterruptedException {
+        CountDownLatch countDownLatch = new CountDownLatch(1);
+        AtomicReference<History> historyMessage = new AtomicReference<>();
+        History historyToPublish = new History();
+        double numA = 5.0;
+        double numB = 3.0;
+
+        historyToPublish.setResult(8.0);
+        historyToPublish.setNumA(numA);
+        historyToPublish.setNumB(numB);
+        historyToPublish.setServiceName("Adder");
+
+        SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
+        container.setConnectionFactory(rabbitTemplate.getConnectionFactory());
+        container.setQueueNames(queueName);
+        container.setMessageListener(
+                (message) -> {
+                    historyMessage.set((History) messageConverter.fromMessage(message));
+                    countDownLatch.countDown();
+                }
+        );
+        container.start();
+
+
+
+        adderHistoryService.PublishHistory(historyToPublish);
+
+        boolean received = countDownLatch.await(10, TimeUnit.SECONDS);
+        log.info(String.valueOf(received));
+        Assertions.assertTrue(received);
+        Assertions.assertEquals(8.0,historyMessage.get().getResult());
+        Assertions.assertEquals(5.0,historyMessage.get().getNumA());
+
+    }
+}
