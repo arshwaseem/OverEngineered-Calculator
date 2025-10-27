@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootTest
-public class DividerServiceIT {
+public class MultiplierServiceIT {
     private final String queueName = "history-queue";
 
     @Autowired
@@ -28,8 +28,8 @@ public class DividerServiceIT {
 
     @DynamicPropertySource
     static void dynamicProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.grpc.server.inprocess.name", ()-> "test");
-        registry.add("spring.grpc.server.port", ()-> "-1");
+        registry.add("spring.grpc.server.inprocess.name", () -> "test");
+        registry.add("spring.grpc.server.port", () -> "-1");
         registry.add("spring.rabbitmq.host", rabbitMQContainer::getHost);
         registry.add("spring.rabbitmq.port", rabbitMQContainer::getAmqpPort);
     }
@@ -50,7 +50,7 @@ public class DividerServiceIT {
     static void init() {
         channel = InProcessChannelBuilder.forName("test").directExecutor().usePlaintext().build();
         blockingStub = OperationServiceGrpc.newBlockingStub(channel);
-        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withExposedPorts(5672,15672);
+        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withExposedPorts(5672, 15672);
         rabbitMQContainer.start();
     }
 
@@ -62,34 +62,34 @@ public class DividerServiceIT {
 
     @BeforeEach
     void purgeQueue() {
-        rabbitTemplate.execute( channel1 -> {
+        rabbitTemplate.execute(channel1 -> {
             channel1.queuePurge(queueName);
             return null;
         });
     }
 
     @Test
-    void divide_ShouldReturnCorrectSumGrpc(){
+    void multiply_ShouldReturnCorrectSumGrpc() {
 
-        OperationRequest operationRequest = OperationRequest.newBuilder().setNumA(9.0).setNumB(4.5).build();
+        OperationRequest operationRequest = OperationRequest.newBuilder().setNumA(9.0).setNumB(3.0).build();
 
-        OperationResponse operationResponse = blockingStub.divide(operationRequest);
+        OperationResponse operationResponse = blockingStub.multiply(operationRequest);
 
-        Assertions.assertEquals(2.0, operationResponse.getResult());
+        Assertions.assertEquals(27.0, operationResponse.getResult());
     }
 
     @Test
-    void divide_ShouldPublishMessageToQueue() throws InterruptedException {
+    void multiply_ShouldPublishMessageToQueue() throws InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AtomicReference<History> historyMessage = new AtomicReference<>();
         History historyToPublish = new History();
         double numA = 6.0;
         double numB = 3.0;
 
-        historyToPublish.setResult(2.0);
+        historyToPublish.setResult(18.0);
         historyToPublish.setNumA(numA);
         historyToPublish.setNumB(numB);
-        historyToPublish.setServiceName("Divider");
+        historyToPublish.setServiceName("Multiplier");
 
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitTemplate.getConnectionFactory());
@@ -103,13 +103,12 @@ public class DividerServiceIT {
         container.start();
 
 
-
         historyService.PublishHistory(historyToPublish);
 
         boolean received = countDownLatch.await(10, TimeUnit.SECONDS);
         Assertions.assertTrue(received);
-        Assertions.assertEquals(2.0,historyMessage.get().getResult());
-        Assertions.assertEquals(6.0,historyMessage.get().getNumA());
+        Assertions.assertEquals(18.0, historyMessage.get().getResult());
+        Assertions.assertEquals(6.0, historyMessage.get().getNumA());
 
     }
 }

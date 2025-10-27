@@ -39,8 +39,8 @@ public class MultiplierService implements MultiplierUseCases{
                                 .tag("error", ex.getClass().getSimpleName())
                                 .register(meterRegistry)
                                 .increment();
+                        throw ex;
                     }
-                    return 0;
                 });
     }
 }

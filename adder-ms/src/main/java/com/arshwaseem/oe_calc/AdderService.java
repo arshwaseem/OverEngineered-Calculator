@@ -42,7 +42,7 @@ public class AdderService implements AdderUseCases{
                                 .tag("error", e.getClass().getSimpleName())
                                 .register( meterRegistry)
                                 .increment();
-                        return 0;
+                        throw e;
                     }
                 });
     }

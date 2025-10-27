@@ -1,6 +1,6 @@
 package com.arshwaseem.oe_calc;
 
-import com.arshwaseem.oe_calc.exception.DivideException;
+import com.arshwaseem.oe_calc.exception.DivideByZeroException;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,8 +30,6 @@ public class DividerServiceTests {
         double numA = 12;
         double numB = 0;
 
-        Assertions.assertThrows(DivideException.class, () -> {
-            dividerService.Divider(numA,numB);
-        });
+        Assertions.assertThrows(DivideByZeroException.class, () -> dividerService.Divider(numA,numB));
     }
 }

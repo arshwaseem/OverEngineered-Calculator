@@ -1,6 +1,6 @@
 package com.arshwaseem.oe_calc;
 
-import com.arshwaseem.oe_calc.exception.DivideException;
+import com.arshwaseem.oe_calc.exception.DivideByZeroException;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
@@ -18,7 +18,7 @@ public class DividerService implements DividerUseCases {
         this.meterRegistry = meterRegistry;
     }
 
-    public double Divider(double numA, double numB) throws DivideException {
+    public double Divider(double numA, double numB) throws DivideByZeroException {
 
         return Timer.builder("calculator.operations.duration")
                 .description("Duration of Calculator Operations")
@@ -32,7 +32,7 @@ public class DividerService implements DividerUseCases {
                                 .register(meterRegistry)
                                 .increment();
                         if(numB == 0){
-                            throw new DivideException("Attempted to divide by zero, division failed");
+                            throw new DivideByZeroException("Attempted to divide by zero, division failed");
                         }
                         return numA/numB;
                     } catch (Exception e){
