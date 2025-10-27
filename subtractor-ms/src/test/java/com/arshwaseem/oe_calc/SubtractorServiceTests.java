@@ -13,9 +13,33 @@ public class SubtractorServiceTests {
     private final SubtractorService subtractorService = new SubtractorService(meterRegistry);
 
     @Test
-    public void SubtractorServiceTest() {
-        double numA = Math.random();
-        double numB = Math.random();
-        Assertions.assertEquals((numA-numB),subtractorService.Subtract(numA,numB));
+    public void subtractor_ShouldSubtractCorrectly() {
+        double numA = 5.0;
+        double numB = 2.0;
+        Assertions.assertEquals(3.0,subtractorService.Subtract(numA,numB));
+    }
+
+    @Test
+    public void subtractor_ShouldHandleNegativeNumbers(){
+        double numA = -5.0;
+        double numB = -2.0;
+
+        Assertions.assertEquals(-7.0,subtractorService.Subtract(numA,numB));
+    }
+
+    @Test
+    public void subtractor_ShouldHandleZeroNumbers(){
+        double numA = 5;
+        double numB = 0;
+
+        Assertions.assertEquals(5,subtractorService.Subtract(numA,numB));
+    }
+
+    @Test
+    public void subtractor_ShouldHandleZeroAsFirstNumber(){
+        double numA = 0;
+        double numB = 5;
+
+        Assertions.assertEquals(-5,subtractorService.Subtract(numA,numB));
     }
 }

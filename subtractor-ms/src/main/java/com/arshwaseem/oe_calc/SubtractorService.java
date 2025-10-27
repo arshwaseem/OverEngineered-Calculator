@@ -31,6 +31,9 @@ public class SubtractorService implements SubtractorUseCases {
                                 .tag("operation", "subtract")
                                 .register( meterRegistry)
                                 .increment();
+                        if(numB < 0){
+                            return numA + numB;
+                        }
                         return numA - numB;
                     } catch(Exception e){
                         log.error("Subtraction Failed: {}", e.getMessage());
