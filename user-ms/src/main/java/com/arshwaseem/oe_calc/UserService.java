@@ -1,6 +1,7 @@
 package com.arshwaseem.oe_calc;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -29,6 +30,7 @@ public class UserService implements UserUseCases{
     }
 
     @Override
+    @Transactional
     public void DeleteUser(String name){
         userJPARepository.deleteByusername(name);
     }

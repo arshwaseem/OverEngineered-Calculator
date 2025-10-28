@@ -1,9 +1,16 @@
 package com.arshwaseem.oe_calc;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import lombok.*;
 
 @Entity
 @Table(name = "users")
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Getter
+@Setter
+@ToString(exclude = "password")
+@EqualsAndHashCode(of="id")
 public class User {
 
     @Id
@@ -11,33 +18,16 @@ public class User {
     @Column(name = "id")
     private Long id;
 
-    @Column(name="username")
-    public String username;
+    @NotBlank(message="Username cannot be Empty")
+    @Column(name="username", nullable=false, unique=true)
+    private String username;
+    @NotBlank(message="Password Cannot Be Empty")
     @Column(name="password")
-    public String password;
+    private String password;
 
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String userName) {
-        this.username = userName;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
+    public User(String username, String password) {
+        this.username = username;
         this.password = password;
     }
 
-    public Long getId() {
-        return id;
-    }
-
-    public void setId(Long ID) {
-        this.id = ID;
-    }
 }

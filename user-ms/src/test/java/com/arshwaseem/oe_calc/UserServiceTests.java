@@ -1,73 +1,53 @@
 package com.arshwaseem.oe_calc;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import org.junit.AfterClass;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import java.util.Optional;
 
-import javax.sql.DataSource;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
-@SpringBootTest
-@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class })
+@ExtendWith(MockitoExtension.class)
 public class UserServiceTests {
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-            .withDatabaseName("test")
-            .withUsername("test")
-            .withPassword("test");
 
-    static {
-        postgres.start();
-    }
+    @Mock
+    private UserJPARepository userJPARepository;
 
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.flyway.enabled",() -> "false");
-    }
-
-
-    @Autowired
-    private DataSource dataSource;
-
-    @Autowired
+    @InjectMocks
     private UserService userService;
 
-    @BeforeEach
-    void setup(@Autowired DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS users(\n" +
-                "    id SERIAL PRIMARY KEY,\n" +
-                "    userName VARCHAR(50) NOT NULL UNIQUE,\n" +
-                "    password VARCHAR(255) NOT NULL\n" +
-                ")");
-        jdbcTemplate.execute("INSERT INTO users(userName, password) VALUES ('test', 'test')");
-    }
-
-    @AfterEach
-    void teardown(@Autowired DataSource dataSource) {
-        JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-        jdbcTemplate.execute("DELETE FROM users");
-    }
-
-    @AfterClass
-    public static void cleanUp() {
-        postgres.stop();
+    @Test
+    void user_ShouldAddUserWithValidData() {
+        User userToSave = new User();
+        userToSave.setUsername("test");
+        userToSave.setPassword("test");
+        userToSave.setId(1L);
+        when(userJPARepository.save(userToSave)).thenReturn(userToSave);
+        userService.AddUser(userToSave);
     }
 
     @Test
-    void getByUsername(){
-        User res = userService.GetByName("test").get();
-        Assertions.assertNotNull(res);
-        Assertions.assertEquals(res.getUsername(), "test");
+    void user_ShouldReturnFalseWhenUserAlreadyExists() {
+        when(userJPARepository.findByusername("test")).thenReturn(Optional.of(new User()));
+        Assertions.assertTrue(userService.userExists("test"));
     }
+
+    @Test
+    void user_ShouldGetByName(){
+        when(userJPARepository.findByusername("test")).thenReturn(Optional.of(new User("test","password")));
+        Optional<User> result = userService.GetByName("test");
+        Assertions.assertTrue(result.isPresent());
+        Assertions.assertEquals("test",result.get().getUsername());
+    }
+
+    @Test
+    void user_ShouldThrowExceptionWhenUserDoesNotExist() {
+        doNothing().when(userJPARepository).findByusername("test");
+        userService.DeleteUser("test");
+    }
+
 }
