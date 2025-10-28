@@ -1,107 +1,74 @@
 package com.arshwaseem.oe_calc;
 
-import org.hibernate.AssertionFailure;
-import org.jetbrains.annotations.NotNull;
-import org.junit.jupiter.api.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.actuate.autoconfigure.security.servlet.ManagementWebSecurityAutoConfiguration;
-import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.boot.autoconfigure.amqp.RabbitAutoConfiguration;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.security.servlet.SecurityAutoConfiguration;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.sql.Timestamp;
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
-@SpringBootTest
-@EnableAutoConfiguration(exclude = { SecurityAutoConfiguration.class, ManagementWebSecurityAutoConfiguration.class, RabbitAutoConfiguration.class })
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 public class HistoryServiceTests {
-    public static PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:latest")
-            .withUsername("test")
-            .withPassword("test");
 
-    static {
-        postgres.start();
-    }
+    @Mock
+    HistoryJPARepository historyJPARepository;
 
-    @DynamicPropertySource
-    static void overrideProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.password", postgres::getPassword);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.flyway.enabled", ()-> "false");
-    }
+    @InjectMocks
+    HistoryService historyService;
 
-    @Autowired
-    private HistoryService historyService;
+    @Test
+    void history_ShouldAddHistory(){
+        History toSave = new History();
+        when(historyJPARepository.save(toSave)).thenReturn(toSave);
 
-    @BeforeEach
-    public void init(@Autowired JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("CREATE TABLE IF NOT EXISTS history (id SERIAL PRIMARY KEY, serviceName VARCHAR(50) NOT NULL, numA DOUBLE PRECISION NOT NULL, numB DOUBLE PRECISION NOT NULL, result DOUBLE PRECISION NOT NULL ,timeStamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP)");
-        jdbcTemplate.execute("INSERT INTO history (serviceName, numA, numB, result, timeStamp) VALUES ('test', 1, 1, 2, CURRENT_TIMESTAMP)");
-    }
-
-    @AfterEach
-    public void close(@Autowired @NotNull JdbcTemplate jdbcTemplate) {
-        jdbcTemplate.execute("DROP TABLE history");
-    }
-
-    @AfterAll
-    public static void cleanUp() {
-        postgres.stop();
+        historyService.AddUpdateHistory(toSave);
     }
 
     @Test
-    public void GetById(){
-        History res = historyService.GetHistoryByID(Long.valueOf(1));
-        Assertions.assertNotNull(res);
-        Assertions.assertEquals("test", res.getServiceName());
+    void history_ShouldGetHistoryById(){
+        History toGet = new History();
+        toGet.setId(1);
+
+        when(historyJPARepository.findById(toGet.getId())).thenReturn(Optional.of(toGet));
+
+        Assertions.assertEquals(1, historyService.GetHistoryByID(1L).getId());
     }
 
     @Test
-    public void AddHistory(){
-        History res = new History();
-        res.setServiceName("test");
-        res.setNumA(10);
-        res.setNumB(20);
-        res.setResult(30);
-        res.setTimeStamp(Timestamp.valueOf(LocalDateTime.now()));
+    void history_ShouldGetAllHistory(){
+        List<History> toGet = new ArrayList<>();
+        toGet.add(new History());
+        toGet.add(new History());
 
-        try {
-            historyService.AddUpdateHistory(res);
-        } catch (Exception e) {
-            throw new AssertionFailure(e.getMessage());
-        }
+        when(historyJPARepository.findAll()).thenReturn(toGet);
+
+        Assertions.assertFalse(historyService.GetAllHistory().isEmpty());
     }
 
     @Test
-    public void DeleteHistory(){
-        try {
-            historyService.DeleteHistory(Long.valueOf(1));
-        } catch (Exception e) {
-            throw new AssertionFailure(e.getMessage());
-        }
+    void history_ShouldGetAllByServiceName(){
+        List<History> toGet = new ArrayList<>();
+        History toGet1 = new History();
+        toGet1.setServiceName("test");
+        toGet.add(toGet1);
+
+        when(historyJPARepository.findAllByServiceName("test")).thenReturn(toGet);
+        Assertions.assertFalse(historyService.GetAllByServiceName("test").isEmpty());
+        Assertions.assertEquals("test",  historyService.GetAllByServiceName("test").get(0).getServiceName());
     }
 
     @Test
-    public void GetAllHistory(){
-        List<History> res = historyService.GetAllHistory();
-        Assertions.assertNotNull(res);
-        Assertions.assertNotEquals(0, res.size());
-    }
+    void history_ShouldDeleteHistory(){
+        doNothing().when(historyJPARepository).deleteById(any());
 
-    @Test
-    public void GetAllByServiceName(){
-        List<History> res = historyService.GetAllByServiceName("test");
-        Assertions.assertNotNull(res);
-        Assertions.assertNotEquals(0, res.size());
-        Assertions.assertEquals("test", res.get(0).getServiceName());
+        historyService.DeleteHistory(1L);
     }
 }
