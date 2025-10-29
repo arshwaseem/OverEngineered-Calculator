@@ -81,7 +81,10 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.OK).body(res);
         } catch (Exception e) {
             log.error("Error validating token: {}", e.getMessage());
-            return ResponseEntity.internalServerError().body("Error validating token: " + e.getMessage());
+            TokenValidationResponse response = new TokenValidationResponse();
+            response.setValid(false);
+            response.setMessage(e.getMessage());
+            return ResponseEntity.badRequest().body(response);
         }
     }
 
