@@ -13,13 +13,12 @@ on:
     branches:
       - main
 
-
 env:
   REGISTRY: ghcr.io
   IMAGE_PREFIX: arshwaseem/overengineered-calculator
 
 jobs:
-  #Building with maven
+  # Building and testing with Maven
   build:
     name: build ${{ matrix.service }}
     runs-on: ubuntu-latest
@@ -47,9 +46,36 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Build with maven
+      - name: Build and Test with Maven (includes JaCoCo)
         working-directory: ./${{ matrix.service }}
-        run: mvn clean package
+        run: mvn clean verify jacoco:report
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.service }}
+          path: ./${{ matrix.service }}/target/surefire-reports/
+          retention-days: 7
+          if-no-files-found: warn
+
+      - name: Upload JaCoCo Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-${{ matrix.service }}
+          path: ./${{ matrix.service }}/target/site/jacoco/
+          retention-days: 30
+          if-no-files-found: warn
+
+      - name: Upload Coverage Data (XML)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-data-${{ matrix.service }}
+          path: ./${{ matrix.service }}/target/site/jacoco/jacoco.xml
+          retention-days: 30
+          if-no-files-found: warn
 
       - name: Upload Jar Artifact
         uses: actions/upload-artifact@v4
@@ -59,7 +85,81 @@ jobs:
           retention-days: 1
           if-no-files-found: error
 
-#Build and push container images to ghcr
+  # Generate consolidated coverage report
+  coverage-report:
+    name: Coverage Report
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+      - name: checkout-code
+        uses: actions/checkout@v4
+
+      - name: Download all coverage data
+        uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-data-*
+          path: ./coverage-data
+
+      - name: Display coverage structure
+        run: |
+          echo "📊 Coverage Data Structure:"
+          find ./coverage-data -name "jacoco.xml" -type f
+
+      - name: Generate Coverage Summary
+        id: coverage
+        run: |
+          echo "## 📊 Test Coverage Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Service | Coverage Report |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|----------------|" >> $GITHUB_STEP_SUMMARY
+          
+          for service in adder-ms subtractor-ms multiplier-ms divider-ms api-gateway history-ms auth user-ms; do
+            if [ -f "./coverage-data/coverage-data-${service}/jacoco.xml" ]; then
+              # Extract coverage percentage using grep and awk
+              COVERAGE=$(grep -oP 'type="INSTRUCTION".*?missed="\K[0-9]+' ./coverage-data/coverage-data-${service}/jacoco.xml | head -1)
+              COVERED=$(grep -oP 'type="INSTRUCTION".*?covered="\K[0-9]+' ./coverage-data/coverage-data-${service}/jacoco.xml | head -1)
+          
+              if [ -n "$COVERAGE" ] && [ -n "$COVERED" ]; then
+                TOTAL=$((COVERAGE + COVERED))
+                if [ $TOTAL -gt 0 ]; then
+                  PERCENTAGE=$(awk "BEGIN {printf \"%.1f\", ($COVERED / $TOTAL) * 100}")
+          
+                  # Color coding
+                  if (( $(echo "$PERCENTAGE >= 80" | bc -l) )); then
+                    EMOJI="🟢"
+                    BADGE="![](https://img.shields.io/badge/coverage-${PERCENTAGE}%25-brightgreen)"
+                  elif (( $(echo "$PERCENTAGE >= 60" | bc -l) )); then
+                    EMOJI="🟡"
+                    BADGE="![](https://img.shields.io/badge/coverage-${PERCENTAGE}%25-yellow)"
+                  else
+                    EMOJI="🔴"
+                    BADGE="![](https://img.shields.io/badge/coverage-${PERCENTAGE}%25-red)"
+                  fi
+          
+                  echo "| ${service} | ${EMOJI} ${PERCENTAGE}% ${BADGE} |" >> $GITHUB_STEP_SUMMARY
+                else
+                  echo "| ${service} | ⚪ N/A |" >> $GITHUB_STEP_SUMMARY
+                fi
+              else
+                echo "| ${service} | ⚪ N/A |" >> $GITHUB_STEP_SUMMARY
+              fi
+            else
+              echo "| ${service} | ⚠️ No coverage data |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📈 Coverage Legend" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟢 **Excellent**: ≥80% coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- 🟡 **Good**: 60-79% coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔴 **Needs Improvement**: <60% coverage" >> $GITHUB_STEP_SUMMARY
+          echo "- ⚪ **N/A**: No coverage data" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "💡 **Tip**: Click on the 'jacoco-report-*' artifacts above to download detailed HTML coverage reports" >> $GITHUB_STEP_SUMMARY
+
+  # Build and push container images to ghcr
   docker-java-services:
     name: Docker ${{ matrix.service }}
     needs: build
@@ -182,7 +282,7 @@ jobs:
 
   pipeline-success:
     name: Pipeline Success
-    needs: [build, docker-java-services, docker-frontend]
+    needs: [build, coverage-report, docker-java-services, docker-frontend]
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
 
@@ -194,11 +294,11 @@ jobs:
       - name: Summary
         run: |
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
-          ## ✅ Pipeline Success
+          ##Pipeline Success
 
           All services built, tested, and pushed successfully!
 
-          ### 📦 Java Microservices
+          ###Java Microservices
           EOF
           echo "Branch: \`${{ steps.branch.outputs.name }}\`" >> $GITHUB_STEP_SUMMARY
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
@@ -216,9 +316,15 @@ jobs:
           echo "| History | \`ghcr.io/${{ env.IMAGE_PREFIX }}/history-ms:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
 
-          ### 🎨 Frontend
+          ###Frontend
           | Component | Image |
           |-----------|-------|
           EOF
           echo "| Frontend | \`ghcr.io/${{ env.IMAGE_PREFIX }}/frontend:${{ steps.branch.outputs.name }}\` |" >> $GITHUB_STEP_SUMMARY
           cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+
+          ###Code Coverage
+          Check the **Coverage Report** job above for detailed coverage metrics!
+          
+          **Tip**: Download the `jacoco-report-*` artifacts to view detailed HTML coverage reports for each service.
+          EOF
