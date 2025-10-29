@@ -11,6 +11,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -61,7 +63,11 @@ public class HistoryRepositoryTests {
     void history_ShouldPersist(){
 
         History toSave = new History();
-
+        toSave.setTimeStamp(Timestamp.from(Instant.now()));
+        toSave.setServiceName("adder");
+        toSave.setNumA(5.0);
+        toSave.setNumA(2.0);
+        toSave.setResult(7.0);
         toSave.setServiceName("test");
 
         History saved = historyJPARepository.save(toSave);

@@ -46,7 +46,7 @@ public class UserServiceTests {
 
     @Test
     void user_ShouldThrowExceptionWhenUserDoesNotExist() {
-        doNothing().when(userJPARepository).findByusername("test");
+        doNothing().when(userJPARepository).deleteByusername("test");
         userService.DeleteUser("test");
     }
 
