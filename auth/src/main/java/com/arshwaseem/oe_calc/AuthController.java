@@ -68,7 +68,7 @@ public class AuthController {
         try{
 
             if (token == null) {
-                log.debug("Token not found in cookie, expecting in request body");
+                log.info("Token not found in cookie, expecting in request body");
                 return ResponseEntity.badRequest()
                         .body(TokenValidationResponse.builder()
                                 .valid(false)
@@ -90,9 +90,9 @@ public class AuthController {
 
         log.debug("Refresh token request");
 
-        String refreshToken = cookieUtil.getRefreshTokenCookie(request).orElseThrow(()-> new IllegalArgumentException("Refresh token not found in cookies"));
-
         try{
+            String refreshToken = cookieUtil.getRefreshTokenCookie(request).orElseThrow(()-> new IllegalArgumentException("Refresh token not found in cookies"));
+
             RefreshTokenRequest refreshRequest = new RefreshTokenRequest(refreshToken);
             AuthResponse res = authService.refreshToken(refreshRequest);
 
