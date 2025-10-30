@@ -4,8 +4,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -21,11 +19,10 @@ import java.time.Instant;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 
 @Testcontainers
 @SpringBootTest
-public class HistoryServiceIntegrationTest {
+public class HistoryServiceIT {
 
     @Container
     private static RabbitMQContainer rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withQueue("history-queue");
