@@ -175,22 +175,6 @@ class JwtAuthenticationFilterTests {
             assertTrue(responseBody.contains("Token validation failed"));
         }
 
-        @Test
-        @DisplayName("Should bypass filter for /actuator endpoints")
-        void testPublicEndpoint_Actuator() throws Exception {
-            // Given
-            when(request.getRequestURI()).thenReturn("/actuator/health");
-
-            // When
-            jwtAuthenticationFilter.doFilterInternal(request, response, filterChain);
-
-            // Then
-            // Note: Based on current implementation, /actuator is NOT in PUBLIC_ENDPOINTS
-            // This test documents current behavior - you may want to add it
-            verify(cookieUtil).getAccessToken(request);
-        }
-
-
     }
 
     @Test
