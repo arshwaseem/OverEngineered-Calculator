@@ -29,8 +29,8 @@ public class UserAdapterREST {
             res.setUsername(userRequest.getUsername());
             res.setPassword(userRequest.getPassword());
 
-            userService.AddUser(res);
-            return ResponseEntity.status(HttpStatus.CREATED).build();
+            User resp = userService.AddUser(res);
+            return ResponseEntity.status(HttpStatus.CREATED).body(resp);
         } catch (Exception e) {
             log.error("Error Registering User: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());

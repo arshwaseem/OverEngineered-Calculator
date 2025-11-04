@@ -19,8 +19,8 @@ public class UserService implements UserUseCases{
     }
 
     @Override
-    public void AddUser(User user) {
-        userJPARepository.save(user);
+    public User AddUser(User user) {
+        return userJPARepository.save(user);
     }
 
     @Override

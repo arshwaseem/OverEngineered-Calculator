@@ -187,14 +187,6 @@ kube-prometheus-stack:
   prometheus:
     enabled: true
     prometheusSpec:
-      resources:
-        requests:
-          memory: 512Mi
-          cpu: 250m
-        limits:
-          memory: 1Gi
-          cpu: 100m
-
       retention: 7d
       retentionSize: 5GB
 
@@ -276,7 +268,7 @@ kube-prometheus-stack:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: "http://{{ .Release.Name }}-kube-prometheus-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090"
+        url: "http://{{ .Release.Name }}-kube-prometheus-st-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090"
         isDefault: false
         jsonData:
           timeInterval: 30s
@@ -287,7 +279,7 @@ kube-prometheus-stack:
       - name: Tempo
         type: tempo
         access: proxy
-        url: "http://tempo.{{ .Release.Namespace }}.svc.cluster.local:3100"
+        url: "http://{{ .Release.Name }}tempo.{{ .Release.Namespace }}.svc.cluster.local:3100"
         isDefault: false
         jsonData:
           httpMethod: GET
@@ -499,7 +491,7 @@ opentelemetry-collector:
 
     exporters:
       otlp/tempo:
-        endpoint: tempo.dev.svc.cluster.local:4317
+        endpoint: {{ .Release.Name }}-tempo.{{ .Release.Namespace}}.svc.cluster.local:4317
         tls:
           insecure: true
 
