@@ -84,12 +84,24 @@ public class GrpcConfiguration {
                 io.grpc.CallOptions callOptions,
                 io.grpc.Channel next) {
 
-            // Create a new span for this gRPC call
-            var currentSpan = tracer.currentSpan();
-            if (currentSpan != null) {
-                // Get the OpenTelemetry context
-                var otelContext = ((OtelCurrentTraceContext) tracer.currentTraceContext())
-                        .context();
+            // Skip tracing if tracer is not available or no active span
+            if (tracer == null || tracer.currentSpan() == null) {
+                return next.newCall(method, callOptions);
+            }
+
+            try {
+                var currentSpan = tracer.currentSpan();
+                var currentTraceContext = tracer.currentTraceContext();
+
+                // Safely check if we have OTel context
+                if (!(currentTraceContext instanceof OtelCurrentTraceContext)) {
+                    return next.newCall(method, callOptions);
+                }
+
+                var otelContext = ((OtelCurrentTraceContext) currentTraceContext).context();
+                if (otelContext == null) {
+                    return next.newCall(method, callOptions);
+                }
 
                 // Wrap the call to propagate context
                 return new io.grpc.ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
@@ -97,25 +109,35 @@ public class GrpcConfiguration {
 
                     @Override
                     public void start(Listener<RespT> responseListener, io.grpc.Metadata headers) {
-                        // Inject trace context into gRPC metadata
-                        if (otelContext != null) {
+                        try {
+                            // Inject trace context into gRPC metadata
                             var span = Span.fromContext((Context) otelContext);
-                            var traceId = span.getSpanContext().getTraceId();
-                            var spanId = span.getSpanContext().getSpanId();
+                            var spanContext = span.getSpanContext();
 
-                            // Add W3C trace context headers
-                            headers.put(
-                                    io.grpc.Metadata.Key.of("traceparent", io.grpc.Metadata.ASCII_STRING_MARSHALLER),
-                                    String.format("00-%s-%s-01", traceId, spanId)
-                            );
+                            if (spanContext.isValid()) {
+                                var traceId = spanContext.getTraceId();
+                                var spanId = spanContext.getSpanId();
+
+                                // Add W3C trace context headers
+                                headers.put(
+                                        io.grpc.Metadata.Key.of("traceparent", io.grpc.Metadata.ASCII_STRING_MARSHALLER),
+                                        String.format("00-%s-%s-01", traceId, spanId)
+                                );
+                            }
+                        } catch (Exception e) {
+                            // Log but don't fail the call if tracing fails
+                            // In production, you'd use proper logging
+                            System.err.println("Failed to inject trace context: " + e.getMessage());
                         }
 
                         super.start(responseListener, headers);
                     }
                 };
-            }
 
-            return next.newCall(method, callOptions);
+            } catch (Exception e) {
+                // If anything goes wrong with tracing, just proceed without it
+                return next.newCall(method, callOptions);
+            }
         }
     }
 }
