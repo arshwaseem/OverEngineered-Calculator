@@ -277,7 +277,7 @@ kube-prometheus-stack:
         type: prometheus
         access: proxy
         url: "http://{{ .Release.Name }}-kube-prometheus-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090"
-        isDefault: true
+        isDefault: false
         jsonData:
           timeInterval: 30s
           exemplarTraceIdDestinations:
@@ -288,6 +288,7 @@ kube-prometheus-stack:
         type: tempo
         access: proxy
         url: "http://tempo.{{ .Release.Namespace }}.svc.cluster.local:3100"
+        isDefault: false
         jsonData:
           httpMethod: GET
           tracesToLogs:
@@ -440,7 +441,7 @@ opentelemetry-collector:
   replicaCount: 1
 
   image:
-    repository: otel/opentelemetry-collector-k8s
+    repository: otel/opentelemetry-collector-contrib
 
   resources:
     requests:
@@ -479,13 +480,12 @@ opentelemetry-collector:
 
       resource:
         attributes:
-          actions:
-            - key: cluster.name
-              value: rancher-desktop
-              action: upsert
-            - key: deployment.environment
-              value: dev
-              action: upsert
+          - key: cluster.name
+            value: rancher-desktop
+            action: upsert
+          - key: deployment.environment
+            value: dev
+            action: upsert
 
       attributes:
         actions:
