@@ -12,6 +12,10 @@ spec:
       {{- include "history-ms.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/actuator/prometheus"
       labels:
         {{- include "history-ms.selectorLabels" . | nindent 8 }}
     spec:

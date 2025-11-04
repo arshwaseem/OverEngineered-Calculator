@@ -64,3 +64,18 @@ dependencies:
     version: 0.1.0
     repository: "file://../charts/frontend"
     condition: frontend.enabled
+
+  - name: kube-prometheus-stack
+    version: 65.1.1
+    repository: https://prometheus-community.github.io/helm-charts
+    condition: kube-prometheus-stack.enabled
+
+  - name: tempo
+    version: 1.10.1
+    repository: https://grafana.github.io/helm-charts
+    condition: tempo.enabled
+
+  - name: opentelemetry-collector
+    version: 0.138.1
+    repository: https://open-telemetry.github.io/opentelemetry-helm-charts
+    condition: opentelemetry-collector.enabled
