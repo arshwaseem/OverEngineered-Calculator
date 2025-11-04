@@ -34,7 +34,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             "/api/auth/login",
             "/api/auth/logout",
             "/api/auth/refresh",
-            "/api/auth/validate"
+            "/api/auth/validate",
+            "/actuator/prometheus",
+            "/actuator/health",
+            "/actuator/info"
     );
     private final CookieUtil cookieUtil;
 
