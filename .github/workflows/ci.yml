@@ -221,7 +221,7 @@ jobs:
           ENV JAVA_OPTS=""
           EXPOSE 8080
           COPY target/*.jar /app/app.jar
-          ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar app/app.jar"]
+          ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
           EOF
 
       - name: build and push docker images

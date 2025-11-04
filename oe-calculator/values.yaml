@@ -1,8 +1,7 @@
 global:
-  imageRegistry: ghcr.io/arshwaseem
   imagePullPolicy: IfNotPresent
   environment: dev
-  imageTag: latest
+  imageTag: tracing
 
 rabbitmq:
   enabled: true
@@ -49,7 +48,7 @@ user-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/user-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   database:
     host: postgres-users-rw
@@ -62,7 +61,7 @@ history-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/history-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   database:
     host: postgres-history-rw
@@ -75,7 +74,7 @@ auth:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/auth
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     user-ms:
@@ -87,7 +86,7 @@ adder-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/adder-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -100,7 +99,7 @@ subtractor-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/subtractor-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -113,7 +112,7 @@ multiplier-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/multiplier-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -126,7 +125,7 @@ divider-ms:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/divider-ms
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -139,7 +138,7 @@ api-gateway:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/api-gateway
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -172,7 +171,7 @@ frontend:
   replicaCount: 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/frontend
-    tag: "{{ .Values.global.imageTag }}"
+    tag: tracing
     pullPolicy: IfNotPresent
   service:
     type: LoadBalancer
@@ -247,11 +246,8 @@ kube-prometheus-stack:
               action: replace
               target_label: service
 
-      enable_features:
+      enableFeatures:
         - exemplar-storage
-
-      exemplars:
-        maxSize: 100000
 
 
   grafana:
@@ -280,7 +276,7 @@ kube-prometheus-stack:
       - name: Prometheus
         type: prometheus
         access: proxy
-        url: http://{{ .Release.Name }}-kube-prometheus-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090
+        url: "http://{{ .Release.Name }}-kube-prometheus-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090"
         isDefault: true
         jsonData:
           timeInterval: 30s
@@ -289,24 +285,28 @@ kube-prometheus-stack:
               datasourceUid: tempo
 
       - name: Tempo
-        type: Tempo
+        type: tempo
         access: proxy
-        url: http://tempo.{{ .Release.Namespace }}.svc.cluster.local:3100
+        url: "http://tempo.{{ .Release.Namespace }}.svc.cluster.local:3100"
         jsonData:
           httpMethod: GET
           tracesToLogs:
             datasourceUid: 'loki'
             tags: ['job', 'instance', 'pod', 'namespace']
-            mappedTags: [{ key: 'service.name', value: 'service' }]
+            mappedTags:
+              - key: 'service.name'
+                value: 'service'
             mapTagNamesEnabled: true
             spanStartTimeShift: '-1h'
             spanEndTimeShift: '1h'
           tracesToMetrics:
             datasourceUid: 'prometheus'
-            tags: [{ key: 'service.name', value: 'service' }]
+            tags:
+              - key: 'service.name'
+                value: 'service'
             queries:
               - name: 'TPS Last 5 Min'
-                query: 'sum(rate(http_server_requests_seconds_count{{$$__tags}}[5m]))'
+                query: 'sum(rate(http_server_requests_seconds_count[5m]))'
           serviceMap:
             datasourceUid: 'prometheus'
           nodeGraph:
