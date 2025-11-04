@@ -1,5 +1,5 @@
 global:
-  imagePullPolicy: IfNotPresent
+  imagePullPolicy: Always
   environment: dev
   imageTag: tracing
 
