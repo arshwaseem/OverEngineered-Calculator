@@ -36,7 +36,6 @@ public class AuthServiceTests {
 
         when(userServiceClient.getUserByUsername("test")).thenReturn(userDTO);
         when(passwordEncoder.matches("pass",userDTO.getPassword())).thenReturn(true);
-        when(passwordEncoder.encode(loginRequest.getPassword())).thenReturn("pass");
         when(jwtService.generateToken(any())).thenReturn("jwt-token");
 
         AuthResponse response = authService.login(loginRequest);
@@ -56,7 +55,6 @@ public class AuthServiceTests {
 
         when(userServiceClient.getUserByUsername("test")).thenReturn(userDTO);
         when(passwordEncoder.matches(loginRequest.getPassword(), userDTO.getPassword())).thenReturn(false);
-        when(passwordEncoder.encode(loginRequest.getPassword())).thenReturn("pass");
 
         Assertions.assertThrows(AuthenticationException.class,  ()->authService.login(loginRequest));
     }
