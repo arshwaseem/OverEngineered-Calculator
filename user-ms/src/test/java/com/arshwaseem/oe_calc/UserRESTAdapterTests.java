@@ -28,7 +28,7 @@ public class UserRESTAdapterTests {
     @Test
     void userRestController_ShouldRegisterUser() throws Exception {
 
-        when(userService.AddUser(new User())).thenReturn(new User());
+        doNothing().when(userService).AddUser(new User());
         when(userService.userExists(any())).thenReturn(false);
 
         mockMvc.perform(post("/user/register")

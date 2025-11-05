@@ -32,6 +32,7 @@ public class AuthServiceClient {
             String cookieHeader = Arrays.stream(originalRequest.getCookies()).map(c -> c.getName() + "=" + c.getValue()).collect(Collectors.joining(";"));
 
             if(cookieHeader.isEmpty()){
+                log.error("Cookie header is empty");
                 throw new RuntimeException("Invalid token");
             }
 
@@ -44,7 +45,7 @@ public class AuthServiceClient {
                     .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e) {
-            log.error("Error Validating Token: "+e.getMessage());
+            log.error("Error Validating Token: {}", e.getMessage());
 
             return TokenValidationResponse.builder()
                     .valid(false)

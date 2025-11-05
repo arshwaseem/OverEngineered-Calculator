@@ -5,6 +5,8 @@ import com.arshwaseem.oe_calc.exception.AuthenticationException;
 import com.arshwaseem.oe_calc.exception.InvalidTokenException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -28,25 +30,25 @@ public class AuthService {
             userDTO.setUsername(registerRequest.getUsername());
             userDTO.setPassword(encodedPassword);
 
-            UserDTO createdUser = userServiceClient.createUser(userDTO);
+            ResponseEntity<?> resp = userServiceClient.createUser(userDTO);
 
-            if (createdUser == null) {
+            if (resp == null || !resp.getStatusCode().isSameCodeAs(HttpStatus.CREATED)) {
                 log.error("Failed to create user");
                 throw new AuthenticationException("Failed To Create User Account");
             }
 
-            log.info("Successfully created user: {}", createdUser.getUsername());
+            log.info("Successfully created user: {}", registerRequest.getUsername());
 
             return RegisterResponse.builder()
                     .message("User registered successfully")
-                    .username(createdUser.getUsername())
-                    .userId(createdUser.getId())
+                    .username(registerRequest.getUsername())
                     .build();
         } catch (AuthenticationException e) {
+            log.error("Error while registering user: {}", e.getMessage());
             throw e;
         } catch (Exception e){
-            log.error("Failed to register user: "+e.getMessage());
-            return null;
+            log.error("Failed to register user: {}",e.getMessage());
+            throw e;
         }
     }
 
@@ -83,10 +85,11 @@ public class AuthService {
                     .build();
 
         } catch (AuthenticationException e) {
+            log.error("Error while logging in: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
             log.error("Failed to login user: "+e.getMessage());
-            return null;
+            throw e;
         }
     }
 
@@ -151,6 +154,7 @@ public class AuthService {
         UserDTO user = userServiceClient.getUserByUsername(username);
 
         if(user == null){
+            log.error("User not found");
             throw new AuthenticationException("User not found");
         }
 

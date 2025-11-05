@@ -4,7 +4,7 @@ import java.util.Optional;
 
 public interface UserUseCases {
     Optional<User> GetByName(String name);
-    User AddUser (User user);
+    void AddUser (User user);
     boolean userExists(String name);
     void DeleteUser(String Name);
 }

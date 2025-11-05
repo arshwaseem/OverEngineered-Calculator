@@ -46,7 +46,7 @@ public class AuthProxyController {
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
 
         } catch (Exception e){
-            log.error("Failed to Register User: "+e.getMessage());
+            log.error("Failed to Register User: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Falied to register user: "+ e.getMessage());
         }
     }
@@ -67,6 +67,7 @@ public class AuthProxyController {
                     .block();
 
             if(response == null){
+                log.error("No response from auth service");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No response from auth service");
             }
 
@@ -82,7 +83,7 @@ public class AuthProxyController {
             return ResponseEntity.status(HttpStatus.OK).body(response.getBody());
 
         } catch (Exception e){
-            log.error("Failed to login: "+e.getMessage());
+            log.error("Failed to login: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());
         }
     }
@@ -104,6 +105,7 @@ public class AuthProxyController {
                     .block();
 
             if(response==null){
+                log.error("No response from auth service");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No response from auth service");
             }
 
@@ -117,7 +119,7 @@ public class AuthProxyController {
 
             return ResponseEntity.status(HttpStatus.OK).body(response.getBody());
         } catch (Exception e){
-            log.error("Failed to refresh token: "+e.getMessage());
+            log.error("Failed to refresh token: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to refresh token: "+e.getMessage());
         }
     }
@@ -136,6 +138,7 @@ public class AuthProxyController {
                     .block();
 
             if(response==null){
+                log.error("No response from auth service");
                 return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("No response from auth service");
             }
 
@@ -149,7 +152,7 @@ public class AuthProxyController {
 
             return ResponseEntity.status(HttpStatus.OK).body(response.getBody());
         } catch (Exception e){
-            log.error("Failed to logout token: "+e.getMessage());
+            log.error("Failed to logout token: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to logout : " + e.getMessage());
         }
     }

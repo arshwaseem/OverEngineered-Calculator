@@ -4,6 +4,8 @@ import com.arshwaseem.oe_calc.DTOs.UserDTO;
 import com.arshwaseem.oe_calc.configuration.UserServiceProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -35,7 +37,7 @@ public class UserServiceClient {
         }
     }
 
-    public UserDTO createUser(UserDTO userDTO) {
+    public ResponseEntity<?> createUser(UserDTO userDTO) {
         log.info("Creating User with Username: " + userDTO.getUsername());
 
         try{
@@ -44,11 +46,11 @@ public class UserServiceClient {
                     .uri(userServiceProperties.getUrl()+"/user/register")
                     .bodyValue(userDTO)
                     .retrieve()
-                    .bodyToMono(UserDTO.class)
+                    .bodyToMono(ResponseEntity.class)
                     .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e){
-            log.error("Error Creating User with Username: "+userDTO.getUsername());
+            log.error("Error Creating User with Username: {}, Error: {}",userDTO.getUsername(), e.getMessage());
             return null;
         }
     }

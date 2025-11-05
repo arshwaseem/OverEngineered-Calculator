@@ -54,7 +54,7 @@ public class DividerAdapterGRPC extends OperationServiceGrpc.OperationServiceImp
             responseObserver.onNext(divideResponse);
             responseObserver.onCompleted();
         } catch (Exception e) {
-            log.error("Error in DividerAdapterGRPC", e);
+            log.error("Error in DividerAdapterGRPC: {}", e.getMessage());
             responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
         }
     }

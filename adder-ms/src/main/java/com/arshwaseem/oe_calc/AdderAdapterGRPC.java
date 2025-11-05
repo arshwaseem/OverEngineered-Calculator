@@ -45,7 +45,7 @@ public class AdderAdapterGRPC extends OperationServiceGrpc.OperationServiceImplB
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
-            log.error("Error in AdderAdapterGRPC", e);
+            log.error("Error in AdderAdapterGRPC: {}", e.getMessage());
             responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
         }
     }

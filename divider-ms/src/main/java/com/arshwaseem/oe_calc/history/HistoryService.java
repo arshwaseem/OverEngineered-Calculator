@@ -17,7 +17,11 @@ public class HistoryService implements HistoryUseCases{
 
     @Override
     public void PublishHistory(History history) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUENAME, history);
-        log.info("Publisher History To Queue");
+        try{
+            rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUENAME, history);
+            log.info("Publisher History To Queue");
+        } catch (Exception e){
+            log.error("Error publishing history: {}", e.getMessage());
+        }
     }
 }

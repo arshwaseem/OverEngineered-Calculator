@@ -67,7 +67,7 @@ public class JwtService {
 
             return !isTokenExpired(token);
         } catch (Exception e){
-            log.error("Unable to validate Token:"+e.getMessage());
+            log.error("Unable to validate Token: {}",e.getMessage());
             return false;
         }
     }

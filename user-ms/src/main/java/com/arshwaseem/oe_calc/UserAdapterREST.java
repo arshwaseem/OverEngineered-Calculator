@@ -22,15 +22,16 @@ public class UserAdapterREST {
         try{
 
             if(userService.userExists(userRequest.getUsername())){
+                log.error("User with Username {} already exists", userRequest.getUsername());
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Username already exists");
             }
 
-            User res = new User();
-            res.setUsername(userRequest.getUsername());
-            res.setPassword(userRequest.getPassword());
+            User toSave = new User();
+            toSave.setUsername(userRequest.getUsername());
+            toSave.setPassword(userRequest.getPassword());
 
-            User resp = userService.AddUser(res);
-            return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+            userService.AddUser(toSave);
+            return ResponseEntity.status(HttpStatus.CREATED).build();
         } catch (Exception e) {
             log.error("Error Registering User: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(e.getMessage());

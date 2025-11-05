@@ -45,7 +45,7 @@ public class SubtractorAdapterGRPC extends OperationServiceGrpc.OperationService
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e){
-            log.error("Error in SubtractorAdapterGRPC", e);
+            log.error("Error in SubtractorAdapterGRPC: {}", e.getMessage());
             responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
         }
     }

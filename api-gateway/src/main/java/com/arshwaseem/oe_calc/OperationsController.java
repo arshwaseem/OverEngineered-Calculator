@@ -28,7 +28,7 @@ public class OperationsController {
             log.debug("Result: " + result);
             return ResponseEntity.ok().body(result);
         } catch (Exception e){
-            log.error(e.getMessage());
+            log.error("Error during add : {}", e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -39,7 +39,7 @@ public class OperationsController {
             Double result = operationsService.Subtract(operationRequestDTO.getNumA(), operationRequestDTO.getNumB());
             return ResponseEntity.ok().body(result);
         } catch (Exception e){
-            log.error(e.getMessage());
+            log.error("Error during subtract: {}",e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -50,7 +50,7 @@ public class OperationsController {
             Double result = operationsService.Multiply(operationRequestDTO.getNumA(), operationRequestDTO.getNumB());
             return ResponseEntity.ok().body(result);
         } catch (Exception e){
-            log.error(e.getMessage());
+            log.error("Error during multiply: {}",e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }
@@ -62,7 +62,7 @@ public class OperationsController {
             return ResponseEntity.ok().body(result);
         }
         catch (Exception e){
-            log.error(e.getMessage());
+            log.error("Error during divide: {}",e.getMessage());
             return ResponseEntity.internalServerError().body(e.getMessage());
         }
     }

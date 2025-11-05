@@ -43,12 +43,9 @@ public class SubtractorService implements SubtractorUseCases {
                                 .tag("error", e.getClass().getSimpleName())
                                 .register( meterRegistry)
                                 .increment();
-                        return 0;
+                        throw e;
                     }
                 });
     }
 
-    public void saveHistory(double res) {
-        System.out.println("Saving History results\n");
-    }
 }

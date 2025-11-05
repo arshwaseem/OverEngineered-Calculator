@@ -3,10 +3,12 @@ package com.arshwaseem.oe_calc;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Timer;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.function.Supplier;
 
+@Slf4j
 @Component
 public class GatewayCustomMetrics {
 
@@ -31,6 +33,7 @@ public class GatewayCustomMetrics {
 
                         return call.get();
                     } catch(Exception e){
+                        log.error("Error during grpc call: {}", e.getMessage());
                         Counter.builder("calculator.grpc.client.calls.errors")
                                 .tag("service", service)
                                 .tag("method", method)

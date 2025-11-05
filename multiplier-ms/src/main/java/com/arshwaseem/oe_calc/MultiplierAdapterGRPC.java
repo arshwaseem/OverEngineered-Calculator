@@ -47,7 +47,7 @@ public class MultiplierAdapterGRPC extends OperationServiceGrpc.OperationService
             responseObserver.onNext(response);
             responseObserver.onCompleted();
         } catch (Exception e) {
-            log.error("Error in MultiplierAdapterGRPC", e);
+            log.error("Error in MultiplierAdapterGRPC: {}", e.getMessage());
             responseObserver.onError(Status.INTERNAL.withDescription(e.getMessage()).asRuntimeException());
         }
     }
