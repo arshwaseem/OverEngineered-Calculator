@@ -1,6 +1,5 @@
 package com.arshwaseem.oe_calc;
 
-import com.arshwaseem.oe_calc.configuration.AuthServiceProperties;
 import com.arshwaseem.oe_calc.dto.TokenValidationResponse;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
@@ -14,20 +13,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceClientTests {
 
     @Mock
-    private WebClient.Builder webClientBuilder;
-
-    @Mock
-    private WebClient webClient;
+    private WebClient authServiceWebclient;
 
     @Mock
     private WebClient.RequestBodyUriSpec requestBodyUriSpec;
@@ -39,29 +33,12 @@ class AuthServiceClientTests {
     private WebClient.ResponseSpec responseSpec;
 
     @Mock
-    private AuthServiceProperties authServiceProperties;
-
-    @Mock
     private HttpServletRequest httpServletRequest;
 
     @InjectMocks
     private AuthServiceClient authServiceClient;
 
-    private static final String AUTH_SERVICE_URL = "http://localhost:8080";
     private static final String VALID_TOKEN = "valid.jwt.token";
-
-    @BeforeEach()
-    void setUp(TestInfo testInfo) {
-        if (testInfo.getDisplayName().contains("Should return invalid response when cookies are null")) {
-            return;
-        }
-        when(authServiceProperties.getUrl()).thenReturn(AUTH_SERVICE_URL);
-        when(webClientBuilder.build()).thenReturn(webClient);
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
-        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
-    }
 
     @Test
     @DisplayName("Should successfully validate token with cookies")
@@ -80,6 +57,10 @@ class AuthServiceClientTests {
                 .message("Token is valid")
                 .build();
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.just(expectedResponse));
 
@@ -91,8 +72,7 @@ class AuthServiceClientTests {
         assertTrue(result.isValid());
         assertEquals(1L, result.getUserId());
         assertEquals("testuser", result.getUsername());
-        verify(webClientBuilder).build();
-        verify(requestBodyUriSpec).uri(AUTH_SERVICE_URL + "/auth/validate");
+        verify(requestBodyUriSpec).uri("/auth/validate");
     }
 
     @Test
@@ -110,6 +90,10 @@ class AuthServiceClientTests {
                 .valid(true)
                 .build();
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.just(response));
 
@@ -119,7 +103,7 @@ class AuthServiceClientTests {
         // Then
         ArgumentCaptor<String> headerCaptor = ArgumentCaptor.forClass(String.class);
         verify(requestBodySpec).header(eq("Cookie"), headerCaptor.capture());
-        
+
         String cookieHeader = headerCaptor.getValue();
         assertTrue(cookieHeader.contains("accessToken=token1"));
         assertTrue(cookieHeader.contains("refreshToken=token2"));
@@ -127,14 +111,19 @@ class AuthServiceClientTests {
     }
 
     @Test
-    @DisplayName("Should return invalid response when cookies are null")
-    void testValidateToken_NullCookies() {
+    @DisplayName("Should return invalid response when cookies are empty")
+    void testValidateToken_EmptyCookies() {
         // Given
-        when(httpServletRequest.getCookies()).thenReturn(null);
+        Cookie[] cookies = {};
+        when(httpServletRequest.getCookies()).thenReturn(cookies);
 
-        TokenValidationResponse res = authServiceClient.validateToken(VALID_TOKEN, httpServletRequest);
+        // When
+        TokenValidationResponse result = authServiceClient.validateToken(VALID_TOKEN, httpServletRequest);
 
-        Assertions.assertFalse(res.isValid());
+        // Then
+        assertNotNull(result);
+        assertFalse(result.isValid());
+        assertTrue(result.getMessage().contains("Failed to validate"));
     }
 
     @Test
@@ -143,7 +132,11 @@ class AuthServiceClientTests {
         // Given
         Cookie[] cookies = {new Cookie("accessToken", VALID_TOKEN)};
         when(httpServletRequest.getCookies()).thenReturn(cookies);
-        
+
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.error(new RuntimeException("Timeout")));
 
@@ -164,6 +157,10 @@ class AuthServiceClientTests {
         Cookie[] cookies = {new Cookie("accessToken", "invalid.token")};
         when(httpServletRequest.getCookies()).thenReturn(cookies);
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.error(WebClientResponseException.create(
                         401, "Unauthorized", null, null, null
@@ -185,6 +182,10 @@ class AuthServiceClientTests {
         Cookie[] cookies = {new Cookie("accessToken", VALID_TOKEN)};
         when(httpServletRequest.getCookies()).thenReturn(cookies);
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.error(WebClientResponseException.create(
                         500, "Internal Server Error", null, null, null
@@ -206,6 +207,10 @@ class AuthServiceClientTests {
         Cookie[] cookies = {new Cookie("accessToken", VALID_TOKEN)};
         when(httpServletRequest.getCookies()).thenReturn(cookies);
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.error(new RuntimeException("Connection refused")));
 
@@ -216,30 +221,6 @@ class AuthServiceClientTests {
         assertNotNull(result);
         assertFalse(result.isValid());
         assertTrue(result.getMessage().contains("Connection refused"));
-    }
-
-    @Test
-    @DisplayName("Should use correct auth service URL from properties")
-    void testValidateToken_UsesCorrectUrl() {
-        // Given
-        String customUrl = "http://custom-auth-service:9090";
-        when(authServiceProperties.getUrl()).thenReturn(customUrl);
-        authServiceClient = new AuthServiceClient(webClientBuilder, authServiceProperties);
-
-        Cookie[] cookies = {new Cookie("accessToken", VALID_TOKEN)};
-        when(httpServletRequest.getCookies()).thenReturn(cookies);
-
-        TokenValidationResponse response = TokenValidationResponse.builder()
-                .valid(true)
-                .build();
-        when(responseSpec.bodyToMono(TokenValidationResponse.class))
-                .thenReturn(Mono.just(response));
-
-        // When
-        authServiceClient.validateToken(VALID_TOKEN, httpServletRequest);
-
-        // Then
-        verify(requestBodyUriSpec).uri(customUrl + "/auth/validate");
     }
 
     @Test
@@ -257,6 +238,11 @@ class AuthServiceClientTests {
         TokenValidationResponse response = TokenValidationResponse.builder()
                 .valid(true)
                 .build();
+
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.just(response));
 
@@ -283,6 +269,11 @@ class AuthServiceClientTests {
                 .valid(false)
                 .message("Empty token")
                 .build();
+
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
                 .thenReturn(Mono.just(response));
 
@@ -295,26 +286,27 @@ class AuthServiceClientTests {
     }
 
     @Test
-    @DisplayName("Should respect 5 second timeout")
-    void testValidateToken_TimeoutConfiguration() {
+    @DisplayName("Should verify URI is called correctly")
+    void testValidateToken_VerifyUriCall() {
         // Given
         Cookie[] cookies = {new Cookie("accessToken", VALID_TOKEN)};
         when(httpServletRequest.getCookies()).thenReturn(cookies);
 
-        // Create a delayed response that exceeds timeout
-        Mono<TokenValidationResponse> delayedResponse = Mono.just(
-                TokenValidationResponse.builder().valid(true).build()
-        ).delayElement(Duration.ofSeconds(6));
+        TokenValidationResponse response = TokenValidationResponse.builder()
+                .valid(true)
+                .build();
 
+        when(authServiceWebclient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri(anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.header(anyString(), anyString())).thenReturn(requestBodySpec);
+        when(requestBodySpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TokenValidationResponse.class))
-                .thenReturn(delayedResponse);
+                .thenReturn(Mono.just(response));
 
         // When
-        TokenValidationResponse result = authServiceClient.validateToken(VALID_TOKEN, httpServletRequest);
+        authServiceClient.validateToken(VALID_TOKEN, httpServletRequest);
 
-        // Then - Should timeout and return error response
-        assertNotNull(result);
-        assertFalse(result.isValid());
-        assertTrue(result.getMessage().contains("Failed to validate"));
+        // Then
+        verify(requestBodyUriSpec).uri("/auth/validate");
     }
 }
