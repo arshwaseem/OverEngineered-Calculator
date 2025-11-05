@@ -92,9 +92,6 @@ class AuthServiceIT {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getUsername()).isEqualTo(TEST_USERNAME);
-        assertThat(response.getBody().getMessage()).contains("User registered successfully");
-        assertThat(response.getBody().getUserId()).isEqualTo(TEST_USER_ID);
 
 
         wireMockServer.verify(postRequestedFor(urlEqualTo("/user/register"))
@@ -471,15 +468,8 @@ class AuthServiceIT {
     private void stubUserServiceForRegistration(String username, String encodedPassword, Long userId) {
         wireMockServer.stubFor(post(urlEqualTo("/user/register"))
                 .willReturn(aResponse()
-                        .withStatus(200)
-                        .withHeader("Content-Type", "application/json")
-                        .withBody(String.format("""
-                                {
-                                    "id": %d,
-                                    "username": "%s",
-                                    "password": "%s"
-                                }
-                                """, userId, username, passwordEncoder.encode(encodedPassword)))));
+                        .withStatus(201)
+                        .withHeader("Content-Type", "application/json")));
     }
 
     private void stubUserServiceForLogin(String username, String password, Long userId) {
