@@ -3,6 +3,7 @@ package com.arshwaseem.oe_calc;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -25,6 +26,17 @@ public class HistoryService implements HistoryUseCases{
     }
 
     @Override
+    @Transactional
+    public void AddBatchHistory(List<History> historyBatch) {
+        try{
+            historyJPARepository.saveAll(historyBatch);
+        } catch (Exception e){
+            log.error(e.getMessage());
+        }
+    }
+
+    @Override
+    @Transactional
     public void DeleteHistory(Long id) {
         try{
             historyJPARepository.deleteById(id);

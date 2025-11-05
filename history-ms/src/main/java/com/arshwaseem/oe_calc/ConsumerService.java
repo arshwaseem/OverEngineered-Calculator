@@ -16,7 +16,7 @@ public class ConsumerService {
         this.historyService = historyService;
     }
 
-    @RabbitListener(queues = RabbitMQConfig.QUEUENAME)
+    @RabbitListener(queues = "history-queue", containerFactory = "rabbitListenerContainerFactory")
     public void consumeHistory(History history){
         try{
             historyService.AddUpdateHistory(history);

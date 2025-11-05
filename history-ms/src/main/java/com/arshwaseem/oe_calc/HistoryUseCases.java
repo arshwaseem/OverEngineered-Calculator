@@ -4,6 +4,7 @@ import java.util.List;
 
 public interface HistoryUseCases {
     void AddUpdateHistory(History history);
+    void AddBatchHistory(List<History> historyBatch);
     History GetHistoryByID(Long id);
     List<History> GetAllHistory();
     List<History> GetAllByServiceName(String serviceName);

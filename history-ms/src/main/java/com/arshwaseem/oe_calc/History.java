@@ -7,6 +7,9 @@ import lombok.Setter;
 import java.sql.Timestamp;
 
 @Entity
+@Table(name="history", indexes = {
+@Index(name = "idx_history_servicename", columnList = "servicename")
+, @Index(name = "idx_history_timestamp", columnList = "timestamp")})
 @Getter
 @Setter
 public class History {
