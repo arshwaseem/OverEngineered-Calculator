@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class MultiplierServiceIT {
     private final String queueName = "history-queue";
 
@@ -60,15 +61,8 @@ public class MultiplierServiceIT {
         rabbitMQContainer.stop();
     }
 
-    @BeforeEach
-    void purgeQueue() {
-        rabbitTemplate.execute(channel1 -> {
-            channel1.queuePurge(queueName);
-            return null;
-        });
-    }
-
     @Test
+    @Order(1)
     void multiply_ShouldReturnCorrectSumGrpc() {
 
         OperationRequest operationRequest = OperationRequest.newBuilder().setNumA(9.0).setNumB(3.0).build();
@@ -79,6 +73,7 @@ public class MultiplierServiceIT {
     }
 
     @Test
+    @Order(2)
     void multiply_ShouldPublishMessageToQueue() throws InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AtomicReference<History> historyMessage = new AtomicReference<>();

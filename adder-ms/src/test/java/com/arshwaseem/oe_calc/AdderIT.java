@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class AdderIT {
 
     private final String queueName = "history-queue";
@@ -39,12 +40,6 @@ public class AdderIT {
         registry.add("spring.rabbitmq.host", rabbitMQContainer::getHost);
         registry.add("spring.rabbitmq.port", rabbitMQContainer::getAmqpPort);
     }
-
-    @Autowired
-    AdderService adderService;
-
-    @Autowired
-    HistoryService adderHistoryService;
 
     @Autowired
     RabbitTemplate rabbitTemplate;
@@ -67,14 +62,6 @@ public class AdderIT {
     static void shutdown() {
         channel.shutdown();
         rabbitMQContainer.stop();
-    }
-
-    @BeforeEach
-    void purgeQueue() throws InterruptedException {
-        rabbitTemplate.execute(exec ->{
-            exec.queuePurge("history-queue");
-            return null;
-        });
     }
 
     @Test

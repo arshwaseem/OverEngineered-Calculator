@@ -32,7 +32,7 @@ public class UserServiceTests {
 
     @Test
     void user_ShouldReturnFalseWhenUserAlreadyExists() {
-        when(userJPARepository.findByUsername("test")).thenReturn(Optional.of(new User()));
+        when(userJPARepository.existsByUsername("test")).thenReturn(true);
         Assertions.assertTrue(userService.userExists("test"));
     }
 
