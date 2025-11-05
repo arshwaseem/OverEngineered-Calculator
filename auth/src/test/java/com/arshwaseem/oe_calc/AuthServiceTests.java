@@ -8,6 +8,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -76,7 +78,7 @@ public class AuthServiceTests {
         UserDTO userDTO = new UserDTO(null,registerRequest.getUsername(),registerRequest.getPassword());
 
         when(passwordEncoder.encode(registerRequest.getPassword())).thenReturn("pass");
-        when(userServiceClient.createUser(userDTO)).thenReturn(userDTO);
+        when(userServiceClient.createUser(userDTO)).thenReturn(ResponseEntity.status(HttpStatus.CREATED).build());
 
         RegisterResponse response = authService.register(registerRequest);
 
