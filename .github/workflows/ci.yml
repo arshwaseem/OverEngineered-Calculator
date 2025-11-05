@@ -218,7 +218,7 @@ jobs:
           cat > Dockerfile.ci <<'EOF'
           FROM eclipse-temurin:17-jre
           WORKDIR /app
-          ENV JAVA_OPTS=""
+          ENV JAVA_OPTS="-XX:+UseG1GC"
           EXPOSE 8080
           COPY target/*.jar /app/app.jar
           ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]
