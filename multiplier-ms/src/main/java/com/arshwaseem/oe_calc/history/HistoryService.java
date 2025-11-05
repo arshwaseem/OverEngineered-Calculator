@@ -3,6 +3,7 @@ package com.arshwaseem.oe_calc.history;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -16,8 +17,13 @@ public class HistoryService implements HistoryUseCases{
     }
 
     @Override
+    @Async("historyPublisherExecutor")
     public void PublishHistory(History history) {
-        rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUENAME, history);
-        log.info("Publisher History To Queue");
+        try{
+            rabbitTemplate.convertAndSend(RabbitMQConfig.QUEUENAME, history);
+            log.info("Publisher History To Queue");
+        } catch (Exception e){
+            log.error("Error Publishing History To Queue: {}",e.getMessage());
+        }
     }
 }
