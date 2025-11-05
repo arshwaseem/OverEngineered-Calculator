@@ -5,7 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import lombok.*;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users", indexes = @Index(name = "idx_users_username", columnList = "users"))
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Getter
 @Setter

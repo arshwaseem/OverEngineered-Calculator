@@ -32,13 +32,13 @@ public class UserServiceTests {
 
     @Test
     void user_ShouldReturnFalseWhenUserAlreadyExists() {
-        when(userJPARepository.findByusername("test")).thenReturn(Optional.of(new User()));
+        when(userJPARepository.findByUsername("test")).thenReturn(Optional.of(new User()));
         Assertions.assertTrue(userService.userExists("test"));
     }
 
     @Test
     void user_ShouldGetByName(){
-        when(userJPARepository.findByusername("test")).thenReturn(Optional.of(new User("test","password")));
+        when(userJPARepository.findByUsername("test")).thenReturn(Optional.of(new User("test","password")));
         Optional<User> result = userService.GetByName("test");
         Assertions.assertTrue(result.isPresent());
         Assertions.assertEquals("test",result.get().getUsername());
@@ -46,7 +46,7 @@ public class UserServiceTests {
 
     @Test
     void user_ShouldThrowExceptionWhenUserDoesNotExist() {
-        doNothing().when(userJPARepository).deleteByusername("test");
+        doNothing().when(userJPARepository).deleteByUsername("test");
         userService.DeleteUser("test");
     }
 

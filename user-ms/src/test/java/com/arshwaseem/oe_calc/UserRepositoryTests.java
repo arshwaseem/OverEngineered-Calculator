@@ -60,7 +60,7 @@ public class UserRepositoryTests {
     @Test
     void user_ShouldGetByName(){
 
-        Optional<User> receivedUser = userJPARepository.findByusername("test");
+        Optional<User> receivedUser = userJPARepository.findByUsername("test");
 
         Assertions.assertTrue(receivedUser.isPresent());
         Assertions.assertEquals("test", receivedUser.get().getUsername());
@@ -69,9 +69,9 @@ public class UserRepositoryTests {
 
     @Test
     void user_ShouldDeleteByUsername(){
-        userJPARepository.deleteByusername("test");
+        userJPARepository.deleteByUsername("test");
 
-        Optional<User> receivedUser = userJPARepository.findByusername("test");
+        Optional<User> receivedUser = userJPARepository.findByUsername("test");
 
         Assertions.assertFalse(receivedUser.isPresent());
     }

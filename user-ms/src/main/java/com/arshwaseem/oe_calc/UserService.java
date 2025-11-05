@@ -18,7 +18,7 @@ public class UserService implements UserUseCases{
     @Override
     public Optional<User> GetByName(String name) {
         try{
-            return userJPARepository.findByusername(name);
+            return userJPARepository.findByUsername(name);
         } catch (Exception e){
             log.error(e.getMessage());
             return Optional.empty();
@@ -39,8 +39,7 @@ public class UserService implements UserUseCases{
     @Override
     public boolean userExists(String userName) {
         try{
-            Optional<User> user = userJPARepository.findByusername(userName);
-            return user.isPresent();
+            return userJPARepository.existsByUsername(userName);
         } catch (Exception e){
             log.error(e.getMessage());
             return false;
@@ -52,7 +51,7 @@ public class UserService implements UserUseCases{
     @Transactional
     public void DeleteUser(String name){
         try{
-            userJPARepository.deleteByusername(name);
+            userJPARepository.deleteByUsername(name);
         } catch (Exception e) {
             log.error(e.getMessage());
         }
