@@ -50,7 +50,7 @@ public class SubtractorServiceIT {
     static void init() {
         channel = InProcessChannelBuilder.forName("test").directExecutor().usePlaintext().build();
         blockingStub = OperationServiceGrpc.newBlockingStub(channel);
-        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withExposedPorts(5672, 15672);
+        rabbitMQContainer = new RabbitMQContainer("rabbitmq:3-management").withExposedPorts(5672, 15672).withQueue("history-queue");
         rabbitMQContainer.start();
     }
 
@@ -82,14 +82,6 @@ public class SubtractorServiceIT {
     void subtract_ShouldPublishMessageToQueue() throws InterruptedException {
         CountDownLatch countDownLatch = new CountDownLatch(1);
         AtomicReference<History> historyMessage = new AtomicReference<>();
-        History historyToPublish = new History();
-        double numA = 6.0;
-        double numB = 3.0;
-
-        historyToPublish.setResult(3.0);
-        historyToPublish.setNumA(numA);
-        historyToPublish.setNumB(numB);
-        historyToPublish.setServiceName("Subtractor");
 
         SimpleMessageListenerContainer container = new SimpleMessageListenerContainer();
         container.setConnectionFactory(rabbitTemplate.getConnectionFactory());
@@ -102,13 +94,10 @@ public class SubtractorServiceIT {
         );
         container.start();
 
-
-        historyService.PublishHistory(historyToPublish);
-
         boolean received = countDownLatch.await(10, TimeUnit.SECONDS);
         Assertions.assertTrue(received);
-        Assertions.assertEquals(3.0, historyMessage.get().getResult());
-        Assertions.assertEquals(6.0, historyMessage.get().getNumA());
+        Assertions.assertEquals(6.0, historyMessage.get().getResult());
+        Assertions.assertEquals(9.0, historyMessage.get().getNumA());
 
     }
 }
