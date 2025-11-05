@@ -35,11 +35,11 @@ public class HistoryServiceTests {
     @Test
     void history_ShouldGetHistoryById(){
         History toGet = new History();
-        toGet.setId(1);
+        toGet.setId(1L);
 
         when(historyJPARepository.findById(toGet.getId())).thenReturn(Optional.of(toGet));
 
-        Assertions.assertEquals(1, historyService.GetHistoryByID(1L).getId());
+        Assertions.assertEquals(1L, historyService.GetHistoryByID(1L).getId());
     }
 
     @Test

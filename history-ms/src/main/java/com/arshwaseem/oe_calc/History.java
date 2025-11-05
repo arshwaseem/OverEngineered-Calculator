@@ -1,8 +1,7 @@
 package com.arshwaseem.oe_calc;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 
 import java.sql.Timestamp;
 
@@ -12,10 +11,13 @@ import java.sql.Timestamp;
 , @Index(name = "idx_history_timestamp", columnList = "timestamp")})
 @Getter
 @Setter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@EqualsAndHashCode(of="id")
 public class History {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private long id;
+    @Column(name = "id")
+    private Long id;
 
     @Column(name="servicename")
     private String serviceName;
