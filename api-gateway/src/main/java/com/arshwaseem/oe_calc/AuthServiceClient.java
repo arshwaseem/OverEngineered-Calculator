@@ -20,8 +20,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class AuthServiceClient {
 
-    private final WebClient.Builder webClientBuilder;
-    private final AuthServiceProperties authServiceProperties;
+    private final WebClient authServiceWebclient;
 
     public TokenValidationResponse validateToken(String token, HttpServletRequest originalRequest) {
         log.debug("Validating token");
@@ -36,14 +35,14 @@ public class AuthServiceClient {
                 throw new RuntimeException("Invalid token");
             }
 
-            return webClientBuilder.build()
+            return authServiceWebclient
                     .post()
-                    .uri(authServiceProperties.getUrl()+"/auth/validate")
+                    .uri("/auth/validate")
                     .header(HttpHeaders.COOKIE, cookieHeader)
                     .retrieve()
                     .bodyToMono(TokenValidationResponse.class)
-                    .timeout(Duration.ofSeconds(5))
                     .block();
+
         } catch (Exception e) {
             log.error("Error Validating Token: {}", e.getMessage());
 

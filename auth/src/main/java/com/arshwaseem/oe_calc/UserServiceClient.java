@@ -17,19 +17,17 @@ import java.time.Duration;
 @RequiredArgsConstructor
 public class UserServiceClient {
 
-    private final WebClient.Builder webClientBuilder;
-    private final UserServiceProperties userServiceProperties;
+    private final WebClient userServiceWebClient;
 
     public UserDTO getUserByUsername(String username) {
-        log.info("Fetching User with Username: " + username);
+        log.debug("Fetching User with Username: " + username);
 
         try{
-            return webClientBuilder.build()
+            return userServiceWebClient
                     .get()
-                    .uri(userServiceProperties.getUrl() + "/user/username?username=" + username)
+                    .uri("/user/username?username=" + username)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
-                    .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e){
             log.error("Error Fetching From User Service: {}", e.getMessage());
@@ -38,16 +36,15 @@ public class UserServiceClient {
     }
 
     public ResponseEntity<?> createUser(UserDTO userDTO) {
-        log.info("Creating User with Username: " + userDTO.getUsername());
+        log.debug("Creating User with Username: " + userDTO.getUsername());
 
         try{
-            return webClientBuilder.build()
+            return userServiceWebClient
                     .post()
-                    .uri(userServiceProperties.getUrl()+"/user/register")
+                    .uri("/user/register")
                     .bodyValue(userDTO)
                     .retrieve()
                     .toEntity(Void.class)
-                    .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e){
             log.error("Error Creating User with Username: {}, Error: {}",userDTO.getUsername(), e.getMessage());

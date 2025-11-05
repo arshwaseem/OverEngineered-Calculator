@@ -14,6 +14,8 @@ import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.context.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.util.concurrent.TimeUnit;
+
 @Configuration
 @Data
 public class GrpcConfiguration {
@@ -40,35 +42,65 @@ public class GrpcConfiguration {
     @Value("${grpc.divide.port:50051}")
     private int dividePort;
 
-    public OperationServiceGrpc.OperationServiceBlockingStub newStub(String host, int port){
+    private ManagedChannel createOptimizedChannel(String host, int port){
+
         log.info("Creating gRPC stub to host: {} port: {}", host, port);
-        ManagedChannel channel = ManagedChannelBuilder
+
+        return ManagedChannelBuilder
                 .forAddress(host, port)
                 .usePlaintext()
-                .intercept(new TracingClientInterceptor(tracer))
+                .keepAliveTime(30, TimeUnit.SECONDS)
+                .keepAliveTimeout(10, TimeUnit.SECONDS)
+                .keepAliveWithoutCalls(true)
+                .idleTimeout(5, TimeUnit.MINUTES)
+                .maxInboundMessageSize(4*1024 * 1024)
+                .directExecutor()
                 .build();
 
-        return OperationServiceGrpc.newBlockingStub(channel);
+    }
+
+    @Bean(destroyMethod = "shutdown")
+    public ManagedChannel addChannel(){
+        return createOptimizedChannel(addHost, addPort);
     }
 
     @Bean
-    public OperationServiceGrpc.OperationServiceBlockingStub addStub(){
-        return newStub(addHost,addPort);
+    public ManagedChannel subtractChannel(){
+        return createOptimizedChannel(subtractHost, subtractPort);
     }
 
     @Bean
-    public OperationServiceGrpc.OperationServiceBlockingStub subtractStub(){
-        return newStub(subtractHost,subtractPort);
+    public ManagedChannel multiplyChannel(){
+        return createOptimizedChannel(multiplyHost, multiplyPort);
     }
 
     @Bean
-    public OperationServiceGrpc.OperationServiceBlockingStub divideStub(){
-        return newStub(divideHost,dividePort);
+    public ManagedChannel divideChannel(){
+        return createOptimizedChannel(divideHost, dividePort);
     }
 
     @Bean
-    public OperationServiceGrpc.OperationServiceBlockingStub multiplyStub(){
-        return newStub(multiplyHost,multiplyPort);
+    public OperationServiceGrpc.OperationServiceBlockingStub addStub(ManagedChannel addChannel){
+        return OperationServiceGrpc.newBlockingStub(addChannel)
+                .withInterceptors(new TracingClientInterceptor(tracer));
+    }
+
+    @Bean
+    public OperationServiceGrpc.OperationServiceBlockingStub subtractStub(ManagedChannel subtractChannel){
+        return OperationServiceGrpc.newBlockingStub(subtractChannel)
+                .withInterceptors(new TracingClientInterceptor(tracer));
+    }
+
+    @Bean
+    public OperationServiceGrpc.OperationServiceBlockingStub divideStub(ManagedChannel divideChannel){
+        return OperationServiceGrpc.newBlockingStub(divideChannel)
+                .withInterceptors(new TracingClientInterceptor(tracer));
+    }
+
+    @Bean
+    public OperationServiceGrpc.OperationServiceBlockingStub multiplyStub(ManagedChannel multiplyChannel){
+        return OperationServiceGrpc.newBlockingStub(multiplyChannel)
+                .withInterceptors(new TracingClientInterceptor(tracer));
     }
 
     private static class TracingClientInterceptor implements io.grpc.ClientInterceptor {

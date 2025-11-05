@@ -3,13 +3,18 @@ package com.arshwaseem.oe_calc;
 import com.arshwaseem.oe_calc.DTOs.UserDTO;
 import com.arshwaseem.oe_calc.configuration.UserServiceProperties;
 import com.github.tomakehurst.wiremock.WireMockServer;
+import io.netty.channel.ChannelOption;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
+
+import java.time.Duration;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.core.WireMockConfiguration.wireMockConfig;
@@ -37,12 +42,20 @@ class UserServiceClientTests {
     void setUp() {
         wireMockServer.resetAll();
 
-        // Create client manually - no Spring context needed!
         UserServiceProperties properties = new UserServiceProperties();
         properties.setUrl("http://localhost:" + wireMockServer.port());
 
-        WebClient.Builder webClientBuilder = WebClient.builder();
-        userServiceClient = new UserServiceClient(webClientBuilder, properties);
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
+                .responseTimeout(Duration.ofSeconds(5));
+
+        WebClient userServiceWebClient = WebClient.builder()
+                .baseUrl(properties.getUrl())
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
+                .build();
+
+
+        userServiceClient = new UserServiceClient(userServiceWebClient);
     }
 
     @Test

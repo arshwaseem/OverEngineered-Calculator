@@ -47,7 +47,7 @@ public class JwtService {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", user.getId());
         claims.put("type","access");
-        return createToken(claims, user.getUsername(), jwtProperties.getRefreshExpiration());
+        return createToken(claims, user.getUsername(), jwtProperties.getExpiration());
     }
 
     public String generateRefreshToken(UserDTO user){
@@ -59,7 +59,7 @@ public class JwtService {
 
     public boolean validateToken(String token){
         try{
-            log.info("Validating token: {}", token);
+            log.debug("Validating token: {}", token);
             Jwts.parser()
                     .verifyWith(getSigningKey())
                     .build()

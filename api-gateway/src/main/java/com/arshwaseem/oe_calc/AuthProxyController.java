@@ -1,22 +1,18 @@
 package com.arshwaseem.oe_calc;
 
-import com.arshwaseem.oe_calc.configuration.AuthServiceProperties;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.ErrorResponse;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.reactive.function.client.WebClient;
 
-import java.time.Duration;
 import java.util.Arrays;
 
 @RestController
@@ -25,22 +21,19 @@ import java.util.Arrays;
 @Slf4j
 public class AuthProxyController {
 
-    private final WebClient.Builder webClientBuilder;
-    private final AuthServiceProperties authServiceProperties;
+    private final WebClient authServiceWebclient;
 
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody Object registerRequest) {
         log.debug("Proxying Request To Auth Service");
 
         try{
-            Object response = webClientBuilder.build()
+            Object response = authServiceWebclient
                     .post()
-                    .uri(authServiceProperties.getUrl()+"/auth/register")
-                    .contentType(MediaType.APPLICATION_JSON)
+                    .uri("/auth/register")
                     .bodyValue(registerRequest)
                     .retrieve()
-                    .bodyToMono(Object.class)
-                    .timeout(Duration.ofSeconds(10))
+                    .toEntity(Object.class)
                     .block();
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -56,14 +49,12 @@ public class AuthProxyController {
         log.debug("Proxying Login Request to auth service");
 
         try{
-            ResponseEntity<Object> response = webClientBuilder.build()
+            ResponseEntity<Object> response = authServiceWebclient
                     .post()
-                    .uri(authServiceProperties.getUrl()+"/auth/login")
-                    .contentType(MediaType.APPLICATION_JSON)
+                    .uri("/auth/login")
                     .bodyValue(loginRequest)
                     .retrieve()
                     .toEntity(Object.class)
-                    .timeout(Duration.ofSeconds(10))
                     .block();
 
             if(response == null){
@@ -94,14 +85,12 @@ public class AuthProxyController {
         try{
             String cookieHeader = extractCookieHeader(httpRequest);
 
-            ResponseEntity<Object> response = webClientBuilder.build()
+            ResponseEntity<Object> response = authServiceWebclient
                     .post()
-                    .uri(authServiceProperties.getUrl()+"/auth/refresh")
+                    .uri("/auth/refresh")
                     .header(HttpHeaders.COOKIE, cookieHeader)
-                    .contentType(MediaType.APPLICATION_JSON)
                     .retrieve()
                     .toEntity(Object.class)
-                    .timeout(Duration.ofSeconds(5))
                     .block();
 
             if(response==null){
@@ -129,12 +118,11 @@ public class AuthProxyController {
         log.debug("Proxying Logout Request to auth service");
 
         try{
-            ResponseEntity<Object> response = webClientBuilder.build()
+            ResponseEntity<Object> response = authServiceWebclient
                     .post()
-                    .uri(authServiceProperties.getUrl()+"/auth/logout")
+                    .uri("/auth/logout")
                     .retrieve()
                     .toEntity(Object.class)
-                    .timeout(Duration.ofSeconds(5))
                     .block();
 
             if(response==null){

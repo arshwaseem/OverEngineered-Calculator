@@ -53,10 +53,9 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest loginRequest) {
-        log.info("Login request for user: {}", loginRequest.getUsername());
+        log.debug("Login request for user: {}", loginRequest.getUsername());
 
         try {
-            String encodedPassword = passwordEncoder.encode(loginRequest.getPassword());
 
             UserDTO user = userServiceClient.getUserByUsername(loginRequest.getUsername());
 
@@ -94,7 +93,7 @@ public class AuthService {
     }
 
     public TokenValidationResponse validateToken(String token) {
-        log.info("Validate token for user: {}", jwtService.extractUsername(token));
+        log.debug("Validate token for user: {}", jwtService.extractUsername(token));
 
         try{
             if(!jwtService.validateToken(token)) {
@@ -106,15 +105,6 @@ public class AuthService {
 
             String username = jwtService.extractUsername(token);
             Long userId = jwtService.extractUserId(token);
-
-            UserDTO user = userServiceClient.getUserByUsername(username);
-
-            if(user == null) {
-                return TokenValidationResponse.builder()
-                        .valid(false)
-                        .message("User not found")
-                        .build();
-            }
 
             log.info("Token validation successful for user {}", username);
 
@@ -134,7 +124,7 @@ public class AuthService {
     }
 
     public AuthResponse refreshToken (RefreshTokenRequest refreshTokenRequest) {
-        log.info("Refresh token request received");
+        log.debug("Refresh token request received");
 
         String refreshToken = refreshTokenRequest.getRefreshToken();
 
