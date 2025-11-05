@@ -46,7 +46,7 @@ public class UserServiceClient {
                     .uri(userServiceProperties.getUrl()+"/user/register")
                     .bodyValue(userDTO)
                     .retrieve()
-                    .bodyToMono(ResponseEntity.class)
+                    .toEntity(Void.class)
                     .timeout(Duration.ofSeconds(5))
                     .block();
         } catch (Exception e){

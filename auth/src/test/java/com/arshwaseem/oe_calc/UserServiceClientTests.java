@@ -7,6 +7,8 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.reactive.function.client.WebClient;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
@@ -100,21 +102,12 @@ class UserServiceClientTests {
     void createUser_shouldReturnCreatedUser() {
         stubFor(post(urlEqualTo("/user/register"))
                 .willReturn(aResponse()
-                        .withHeader("Content-Type", "application/json")
-                        .withStatus(201)
-                        .withBody("""
-                                {
-                                    "id": 2,
-                                    "username": "newuser",
-                                    "password": "encoded-password"
-                                }
-                                """)));
+                        .withStatus(201)));
 
         UserDTO newUser = new UserDTO(null, "newuser", "password123");
-        UserDTO createdUser = userServiceClient.createUser(newUser);
+        ResponseEntity<?> createdUser = userServiceClient.createUser(newUser);
 
         assertThat(createdUser).isNotNull();
-        assertThat(createdUser.getId()).isEqualTo(2L);
-        assertThat(createdUser.getUsername()).isEqualTo("newuser");
+        assertThat(createdUser.getStatusCode()).isEqualTo(HttpStatus.CREATED);
     }
 }
