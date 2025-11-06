@@ -1,0 +1,50 @@
+{{- if .Values.autoscaling.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "history-ms.fullname" . }}
+  labels:
+    {{- include "history-ms.labels" . | nindent 4 }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ include "history-ms.fullname" . }}
+  minReplicas: {{ .Values.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.autoscaling.maxReplicas }}
+  metrics:
+  {{- if .Values.autoscaling.targetCPUUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.targetCPUUtilizationPercentage }}
+  {{- end }}
+  {{- if .Values.autoscaling.targetMemoryUtilizationPercentage }}
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: {{ .Values.autoscaling.targetMemoryUtilizationPercentage }}
+  {{- end }}
+  {{- if and .Values.autoscaling.customMetrics .Values.autoscaling.customMetrics.enabled }}
+  # Custom metric for RabbitMQ queue depth
+  # Requires prometheus-adapter or similar metrics API server
+  - type: External
+    external:
+      metric:
+        name: rabbitmq_queue_messages_ready
+        selector:
+          matchLabels:
+            queue: history-queue
+      target:
+        type: Value
+        value: {{ .Values.autoscaling.customMetrics.queueDepthThreshold | quote }}
+  {{- end }}
+  {{- if .Values.autoscaling.behavior }}
+  behavior:
+    {{- toYaml .Values.autoscaling.behavior | nindent 4 }}
+  {{- end }}
+{{- end }}
