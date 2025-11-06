@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3  # Higher for message consumption parallelism
 
 image:
   repository: ghcr.io/arshwaseem/history-ms
@@ -9,24 +9,200 @@ service:
   type: ClusterIP
   port: 8080
 
-env:
-  rabbitmq:
-    host: rabbitmq
-    port: 5672
-    username: guest
-    password: guest
-
-
+# Database configuration
 database:
-  host: postgres-history-rw
+  host: postgres-history-rw  # Assuming CNPG cluster naming
   port: 5432
   name: history
   secretName: postgres-history-app
 
+# RabbitMQ configuration
+rabbitmq:
+  host: rabbitmq
+  port: 5672
+  secretName: rabbitmq-secret
+
+# CRITICAL: Hybrid workload needs balanced resources
+# - Database operations (reads/writes)
+# - RabbitMQ message consumption (async processing)
+# - HTTP API serving
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m       # High for batch processing + DB operations
+    memory: 1536Mi   # Increased - batch inserts + message queues + DB caching
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 500m        # Guaranteed CPU for consistent message processing
+    memory: 1024Mi   # High baseline - messages + DB result sets
+
+# NEW: Health probes accounting for DB + RabbitMQ dependencies
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 90      # DB + RabbitMQ connection initialization
+  periodSeconds: 15            # Less frequent - includes DB/RabbitMQ checks
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 30      # Wait for DB + RabbitMQ connections
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3          # Tolerant of transient DB/RabbitMQ issues
+  successThreshold: 1
+
+# NEW: Startup probe for migrations + RabbitMQ setup
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 36         # 3 minutes for Flyway migrations + connections
+  successThreshold: 1
+
+# NEW: Moderate HPA - balance between DB connections and message throughput
+autoscaling:
+  enabled: true
+  minReplicas: 3               # Higher baseline for message consumption
+  maxReplicas: 10              # More than user-ms - message-driven can scale more
+  targetCPUUtilizationPercentage: 60    # Moderate - batch processing is CPU intensive
+  targetMemoryUtilizationPercentage: 70
+  # Custom metric for RabbitMQ queue depth (optional, requires metrics-server)
+  customMetrics:
+    enabled: false
+    queueDepthThreshold: 1000  # Scale up if queue > 1000 messages
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 45    # Faster than user-ms, slower than auth
+      policies:
+      - type: Percent
+        value: 100                       # Double capacity quickly
+        periodSeconds: 45
+      - type: Pods
+        value: 2
+        periodSeconds: 45
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Conservative - let queue drain
+      policies:
+      - type: Pods
+        value: 1                         # Remove 1 pod at a time
+        periodSeconds: 120
+
+# NEW: PDB for availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2              # Keep message consumption active
+
+# NEW: Topology spread
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+# NEW: Pod anti-affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - history-ms
+        topologyKey: kubernetes.io/hostname
+
+# NEW: Medium priority (async processing, not critical path)
+priorityClassName: medium-priority
+
+# NEW: Init container disabled
+initContainers:
+  enabled: false
+
+# NEW: Deployment strategy
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# NEW: DNS optimization
+dnsConfig:
+  options:
+  - name: ndots
+    value: "1"
+  - name: timeout
+    value: "2"
+  - name: attempts
+    value: "2"
+
+# NEW: Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+# NEW: Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# NEW: Longer termination for message drain + DB connections
+terminationGracePeriodSeconds: 60  # Extra time for RabbitMQ message drain
+
+# NEW: Database connection pool (from application.properties)
+database_config:
+  connection_pool:
+    maximum_pool_size: 20      # From app config
+    minimum_idle: 10           # Higher than user-ms - batch writes benefit from warm connections
+    connection_timeout: 10000  # 10s
+    idle_timeout: 300000       # 5min
+    max_lifetime: 600000       # 10min
+    leak_detection_threshold: 60000
+
+# NEW: JPA/Hibernate batch configuration (from app config)
+jpa_config:
+  jdbc_batch_size: 50          # Large batches for history writes
+  order_inserts: true
+  order_updates: true
+  batch_versioned_data: true
+  jdbc_fetch_size: 100
+  default_batch_fetch_size: 25
+  generate_statistics: false   # Disable in production for performance
+
+# NEW: RabbitMQ consumer configuration (from app config)
+rabbitmq_config:
+  listener:
+    concurrency: 3             # Concurrent consumers per pod
+    max_concurrency: 10        # Max consumers per pod
+    prefetch: 50               # Messages pre-fetched per consumer
+    batch_size: 25             # Process messages in batches
+    acknowledge_mode: auto
+  connection:
+    cache_mode: channel
+    channel_size: 25           # Channel pool size
+    checkout_timeout: 5000
+
+# NEW: Tomcat configuration for REST API
+tomcat_config:
+  threads:
+    max: 200
+    min_spare: 20
+  accept_count: 100
+  max_connections: 10000
+  connection_timeout: 5000
+  keep_alive_timeout: 60000
+  max_keep_alive_requests: 100

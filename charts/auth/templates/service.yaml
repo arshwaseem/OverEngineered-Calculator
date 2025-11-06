@@ -7,6 +7,15 @@ metadata:
 
 spec:
   type: {{ .Values.service.type }}
+  {{- if .Values.serviceConfig }}
+  {{- if .Values.serviceConfig.sessionAffinity }}
+  sessionAffinity: {{ .Values.serviceConfig.sessionAffinity }}
+  {{- end }}
+  {{- if .Values.serviceConfig.sessionAffinityConfig }}
+  sessionAffinityConfig:
+    {{- toYaml .Values.serviceConfig.sessionAffinityConfig | nindent 4 }}
+  {{- end }}
+  {{- end }}
   ports:
     - port: {{ .Values.service.port }}
       targetPort: http

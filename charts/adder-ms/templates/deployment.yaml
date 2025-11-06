@@ -1,25 +1,54 @@
 apiVersion: apps/v1
-
 kind: Deployment
-
 metadata:
   name: {{ include "adder-ms.fullname" . }}
   labels: {{- include "adder-ms.labels" . | nindent 4 }}
-
 spec:
   replicas: {{.Values.replicaCount}}
+  {{- if .Values.deploymentStrategy }}
+  strategy:
+    {{- toYaml .Values.deploymentStrategy | nindent 4 }}
+  {{- end }}
   selector:
     matchLabels:
       {{- include "adder-ms.selectorLabels" . | nindent 6}}
   template:
     metadata:
       annotations:
-        prometheus.io/scrape: "true"
-        prometheus.io/port: "8080"
-        prometheus.io/path: "/actuator/prometheus"
+        {{- if .Values.podAnnotations }}
+        {{- toYaml .Values.podAnnotations | nindent 8 }}
+        {{- end }}
       labels:
         {{- include "adder-ms.selectorLabels" . | nindent 8}}
     spec:
+      {{- if .Values.priorityClassName }}
+      priorityClassName: {{ .Values.priorityClassName }}
+      {{- end }}
+      {{- if .Values.securityContext }}
+      securityContext:
+        {{- toYaml .Values.securityContext | nindent 8 }}
+      {{- end }}
+      {{- if .Values.affinity }}
+      affinity:
+        {{- toYaml .Values.affinity | nindent 8 }}
+      {{- end }}
+      {{- if and .Values.topologySpreadConstraints .Values.topologySpreadConstraints.enabled }}
+      topologySpreadConstraints:
+      - maxSkew: {{ .Values.topologySpreadConstraints.maxSkew }}
+        topologyKey: {{ .Values.topologySpreadConstraints.topologyKey }}
+        whenUnsatisfiable: {{ .Values.topologySpreadConstraints.whenUnsatisfiable }}
+        labelSelector:
+          matchLabels:
+            {{- include "adder-ms.selectorLabels" . | nindent 12 }}
+      {{- end }}
+      {{- if .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.dnsConfig | nindent 8 }}
+      {{- end }}
+      {{- if .Values.terminationGracePeriodSeconds }}
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      {{- end }}
+      {{- if and .Values.initContainers .Values.initContainers.enabled }}
       initContainers:
         - name: wait-for-rabbitmq
           image: busybox:latest
@@ -32,6 +61,7 @@ spec:
                 sleep 5
               done
               echo "RabbitMQ is Ready......"
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
@@ -39,6 +69,9 @@ spec:
           ports:
             - name: grpc
               containerPort: {{ .Values.service.grpcPort }}
+              protocol: TCP
+            - name: http
+              containerPort: {{ .Values.service.httpPort }}
               protocol: TCP
           env:
             - name: SPRING_RABBITMQ_HOST
@@ -52,5 +85,45 @@ spec:
                 secretKeyRef:
                   name: {{ include "adder-ms.fullname" . }}-secret
                   key: rabbitmq-password
+            {{- if .Values.grpc_config }}
+            # gRPC server tuning
+            - name: GRPC_SERVER_MAX_INBOUND_MESSAGE_SIZE
+              value: "4194304"  # 4MB
+            - name: GRPC_SERVER_KEEPALIVE_TIME
+              value: {{ .Values.grpc_config.keepalive_time | quote }}
+            - name: GRPC_SERVER_KEEPALIVE_TIMEOUT
+              value: {{ .Values.grpc_config.keepalive_timeout | quote }}
+            - name: GRPC_SERVER_MAX_CONNECTION_IDLE
+              value: {{ .Values.grpc_config.max_connection_idle | quote }}
+            - name: GRPC_SERVER_MAX_CONNECTION_AGE
+              value: {{ .Values.grpc_config.max_connection_age | quote }}
+            {{- end }}
+            # JVM tuning for stateless compute
+            - name: JAVA_TOOL_OPTIONS
+              value: "-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0 -XX:+UseG1GC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -Djava.awt.headless=true"
+            # Graceful shutdown
+            - name: SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE
+              value: "20s"
+            - name: SERVER_SHUTDOWN
+              value: "graceful"
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          {{- if .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          {{- end }}
+          lifecycle:
+            preStop:
+              exec:
+                command:
+                - sh
+                - -c
+                - sleep 10

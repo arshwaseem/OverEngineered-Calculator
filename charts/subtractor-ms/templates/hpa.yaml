@@ -2,14 +2,14 @@
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler
 metadata:
-  name: {{ include "adder-ms.fullname" . }}
+  name: {{ include "subtractor-ms.fullname" . }}
   labels:
-    {{- include "adder-ms.labels" . | nindent 4 }}
+    {{- include "subtractor-ms.labels" . | nindent 4 }}
 spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: {{ include "adder-ms.fullname" . }}
+    name: {{ include "subtractor-ms.fullname" . }}
   minReplicas: {{ .Values.autoscaling.minReplicas }}
   maxReplicas: {{ .Values.autoscaling.maxReplicas }}
   metrics:

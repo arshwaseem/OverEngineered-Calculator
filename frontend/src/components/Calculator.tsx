@@ -1,11 +1,43 @@
-import { useState } from 'react';
+import { useState, useCallback, memo } from 'react';
 import apiService from '@/services/api';
 import type { OperationResponse } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
-import {motion} from 'motion/react';
-import {Button} from "@/components/ui/button.tsx";
+import { motion } from 'motion/react';
+import { Button } from "@/components/ui/button.tsx";
 
 type Operation = '+' | '-' | '*' | '/';
+
+// Memoized button component to prevent unnecessary re-renders
+const CalculatorButton = memo(({
+    children,
+    onClick,
+    variant = "outline",
+    className = "",
+    disabled
+}: {
+    children: React.ReactNode;
+    onClick: () => void;
+    variant?: "outline" | "default" | "secondary" | "destructive";
+    className?: string;
+    disabled: boolean;
+}) => {
+    const MotionButton = motion.create(Button);
+
+    return (
+        <MotionButton
+            onClick={onClick}
+            variant={variant}
+            className={`h-16 text-lg ${className}`}
+            whileTap={{ scale: 0.80 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
+            disabled={disabled}
+        >
+            {children}
+        </MotionButton>
+    );
+});
+
+CalculatorButton.displayName = 'CalculatorButton';
 
 export default function Calculator() {
     const [display, setDisplay] = useState<string>('0');
@@ -14,45 +46,48 @@ export default function Calculator() {
     const [waitingForSecondOperand, setWaitingForSecondOperand] = useState<boolean>(false);
     const [loading, setLoading] = useState<boolean>(false);
 
-    const isErrorState = (value: string): boolean => {
+    const isErrorState = useCallback((value: string): boolean => {
         return value.includes('Error') || value === 'undefined' || value === 'NaN';
-    };
+    }, []);
 
-    const inputDigit = (digit: number) => {
-        if (waitingForSecondOperand || isErrorState(display)) {
-            setDisplay(String(digit));
-            setWaitingForSecondOperand(false);
-            return;
-        }
+    const inputDigit = useCallback((digit: number) => {
+        setDisplay(prevDisplay => {
+            if (waitingForSecondOperand || isErrorState(prevDisplay)) {
+                setWaitingForSecondOperand(false);
+                return String(digit);
+            }
 
-        if (display === '0') {
-            setDisplay(String(digit));
-            return;
-        }
+            if (prevDisplay === '0') {
+                return String(digit);
+            }
 
-        setDisplay(display + String(digit));
-    };
+            return prevDisplay + String(digit);
+        });
+    }, [waitingForSecondOperand, isErrorState]);
 
-    const inputDecimal = () => {
-        if (waitingForSecondOperand) {
-            setDisplay('0.');
-            setWaitingForSecondOperand(false);
-            return;
-        }
+    const inputDecimal = useCallback(() => {
+        setDisplay(prevDisplay => {
+            if (waitingForSecondOperand) {
+                setWaitingForSecondOperand(false);
+                return '0.';
+            }
 
-        if (!display.includes('.')) {
-            setDisplay(display + '.');
-        }
-    };
+            if (!prevDisplay.includes('.')) {
+                return prevDisplay + '.';
+            }
 
-    const clear = () => {
+            return prevDisplay;
+        });
+    }, [waitingForSecondOperand]);
+
+    const clear = useCallback(() => {
         setDisplay('0');
         setFirstOperand(null);
         setOperation(null);
         setWaitingForSecondOperand(false);
-    };
+    }, []);
 
-    const handleOperator = async (nextOperation: Operation) => {
+    const handleOperator = useCallback(async (nextOperation: Operation) => {
         const inputValue = parseFloat(display);
 
         if (firstOperand === null) {
@@ -108,9 +143,9 @@ export default function Calculator() {
             setOperation(nextOperation);
             setWaitingForSecondOperand(true);
         }
-    };
+    }, [display, firstOperand, operation, waitingForSecondOperand]);
 
-    const handleEquals = async () => {
+    const handleEquals = useCallback(async () => {
         const inputValue = parseFloat(display);
 
         if (firstOperand === null || operation === null) {
@@ -157,47 +192,36 @@ export default function Calculator() {
         } finally {
             setLoading(false);
         }
-    };
+    }, [display, firstOperand, operation]);
 
-    const MotionButton = motion.create(Button);
+    // Create memoized handlers for each digit
+    const handleDigit0 = useCallback(() => inputDigit(0), [inputDigit]);
+    const handleDigit1 = useCallback(() => inputDigit(1), [inputDigit]);
+    const handleDigit2 = useCallback(() => inputDigit(2), [inputDigit]);
+    const handleDigit3 = useCallback(() => inputDigit(3), [inputDigit]);
+    const handleDigit4 = useCallback(() => inputDigit(4), [inputDigit]);
+    const handleDigit5 = useCallback(() => inputDigit(5), [inputDigit]);
+    const handleDigit6 = useCallback(() => inputDigit(6), [inputDigit]);
+    const handleDigit7 = useCallback(() => inputDigit(7), [inputDigit]);
+    const handleDigit8 = useCallback(() => inputDigit(8), [inputDigit]);
+    const handleDigit9 = useCallback(() => inputDigit(9), [inputDigit]);
 
-    const CalculatorButton = ({
-                                  children,
-                                  onClick,
-                                  variant = "outline",
-                                  className = "",
-        disabled
-                              }: {
-        children: React.ReactNode;
-        onClick: () => void;
-        variant?: "outline" | "default" | "secondary" | "destructive";
-        className?: string;
-        disabled:boolean;
-    }) => (
-        <MotionButton
-            onClick={onClick}
-            variant={variant}
-            className={`h-16 text-lg ${className}`}
-            whileTap={{ scale: 0.80 }}
-            transition={{ type: "spring", stiffness: 400, damping: 17 }}
-            disabled={disabled}
-        >
-            {children}
-        </MotionButton>
-    );
-
+    // Create memoized handlers for operations
+    const handleAdd = useCallback(() => handleOperator('+'), [handleOperator]);
+    const handleSubtract = useCallback(() => handleOperator('-'), [handleOperator]);
+    const handleMultiply = useCallback(() => handleOperator('*'), [handleOperator]);
+    const handleDivide = useCallback(() => handleOperator('/'), [handleOperator]);
 
     return (
         <Card className="w-full max-w-md mx-auto border border-gray-900 border-2">
             <CardContent className="p-6">
-
                 <div
                     className={`col-span-4 bg-gray-200 p-4 rounded-lg mb-4 text-right text-4xl font-semibold tracking-wide ${loading ? 'opacity-50' : ''}`}>
                     <motion.div
                         key={display}
-                        initial={{opacity: 0, x: 20}}
-                        animate={{opacity: 1, x: 0}}
-                        transition={{duration: 0.2}}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.2 }}
                         className="text-slate-900 text-4xl break-all"
                     >
                         {display}
@@ -205,7 +229,6 @@ export default function Calculator() {
                 </div>
 
                 <div className="grid grid-cols-4 gap-3">
-
                     <CalculatorButton
                         onClick={clear}
                         variant="outline"
@@ -216,7 +239,7 @@ export default function Calculator() {
                     </CalculatorButton>
 
                     <CalculatorButton
-                        onClick={() => handleOperator('/')}
+                        onClick={handleDivide}
                         variant="outline"
                         className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
                         disabled={loading}
@@ -225,7 +248,7 @@ export default function Calculator() {
                     </CalculatorButton>
 
                     <CalculatorButton
-                        onClick={() => handleOperator('*')}
+                        onClick={handleMultiply}
                         variant="outline"
                         className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
                         disabled={loading}
@@ -233,15 +256,35 @@ export default function Calculator() {
                         ×
                     </CalculatorButton>
 
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(7)} disabled={loading}>7</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(8)} disabled={loading}>8</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(9)} disabled={loading}>9</CalculatorButton>
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit7}
+                        disabled={loading}
+                    >
+                        7
+                    </CalculatorButton>
 
                     <CalculatorButton
-                        onClick={() => handleOperator('-')}
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit8}
+                        disabled={loading}
+                    >
+                        8
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit9}
+                        disabled={loading}
+                    >
+                        9
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        onClick={handleSubtract}
                         variant="outline"
                         className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
                         disabled={loading}
@@ -249,15 +292,35 @@ export default function Calculator() {
                         −
                     </CalculatorButton>
 
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(4)} disabled={loading}>4</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(5)} disabled={loading}>5</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(6)} disabled={loading}>6</CalculatorButton>
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit4}
+                        disabled={loading}
+                    >
+                        4
+                    </CalculatorButton>
 
                     <CalculatorButton
-                        onClick={() => handleOperator('+')}
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit5}
+                        disabled={loading}
+                    >
+                        5
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit6}
+                        disabled={loading}
+                    >
+                        6
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        onClick={handleAdd}
                         variant="outline"
                         className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
                         disabled={loading}
@@ -265,12 +328,32 @@ export default function Calculator() {
                         +
                     </CalculatorButton>
 
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(1)} disabled={loading}>1</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(2)} disabled={loading}>2</CalculatorButton>
-                    <CalculatorButton variant="outline" className="h-14 text-xl font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={() => inputDigit(3)} disabled={loading}>3</CalculatorButton>
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit1}
+                        disabled={loading}
+                    >
+                        1
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit2}
+                        disabled={loading}
+                    >
+                        2
+                    </CalculatorButton>
+
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={handleDigit3}
+                        disabled={loading}
+                    >
+                        3
+                    </CalculatorButton>
 
                     <CalculatorButton
                         onClick={handleEquals}
@@ -281,7 +364,7 @@ export default function Calculator() {
                     </CalculatorButton>
 
                     <CalculatorButton
-                        onClick={() => inputDigit(0)}
+                        onClick={handleDigit0}
                         variant="outline"
                         className="col-span-2 h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
                         disabled={loading}
@@ -289,8 +372,14 @@ export default function Calculator() {
                         0
                     </CalculatorButton>
 
-                    <CalculatorButton variant="outline" className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
-                            onClick={inputDecimal} disabled={loading}>.</CalculatorButton>
+                    <CalculatorButton
+                        variant="outline"
+                        className="h-14 text-xl bg-slate-100 font-bold hover:bg-slate-400 active:bg-slate-500"
+                        onClick={inputDecimal}
+                        disabled={loading}
+                    >
+                        .
+                    </CalculatorButton>
                 </div>
 
                 {loading && (

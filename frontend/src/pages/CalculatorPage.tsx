@@ -1,10 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthState, useAuthActions } from '@/context/AuthContext';
 import Calculator from '@/components/Calculator';
 import { Button } from '@/components/ui/button';
 
 export default function CalculatorPage() {
-    const { user, logout } = useAuth();
+    // Split context usage - only subscribe to what we need
+    const { user } = useAuthState();
+    const { logout } = useAuthActions();
     const navigate = useNavigate();
 
     const handleLogout = async () => {

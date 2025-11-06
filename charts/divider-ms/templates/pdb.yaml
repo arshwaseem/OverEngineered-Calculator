@@ -2,12 +2,12 @@
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
-  name: {{ include "multiplier-ms.fullname" . }}
+  name: {{ include "divider-ms.fullname" . }}
   labels:
-    {{- include "multiplier-ms.labels" . | nindent 4 }}
+    {{- include "divider-ms.labels" . | nindent 4 }}
 spec:
   minAvailable: {{ .Values.podDisruptionBudget.minAvailable }}
   selector:
     matchLabels:
-      {{- include "multiplier-ms.selectorLabels" . | nindent 6 }}
+      {{- include "divider-ms.selectorLabels" . | nindent 6 }}
 {{- end }}

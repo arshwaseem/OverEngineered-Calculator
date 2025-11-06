@@ -1,26 +1,34 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
-import Login from '@/pages/Login';
-import Register from '@/pages/Register';
-import CalculatorPage from '@/pages/CalculatorPage';
 import type { ReactNode } from 'react';
+
+// Lazy load route components for code splitting
+const Login = lazy(() => import('@/pages/Login'));
+const Register = lazy(() => import('@/pages/Register'));
+const CalculatorPage = lazy(() => import('@/pages/CalculatorPage'));
 
 interface RouteWrapperProps {
     children: ReactNode;
+}
+
+// Loading component for Suspense fallback
+function LoadingSpinner() {
+    return (
+        <div className="flex min-h-screen items-center justify-center">
+            <div className="text-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
+                <p className="mt-4 text-gray-600">Loading...</p>
+            </div>
+        </div>
+    );
 }
 
 function ProtectedRoute({ children }: RouteWrapperProps) {
     const { isAuthenticated, loading } = useAuth();
 
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (!isAuthenticated) {
@@ -34,14 +42,7 @@ function PublicRoute({ children }: RouteWrapperProps) {
     const { isAuthenticated, loading } = useAuth();
 
     if (loading) {
-        return (
-            <div className="flex min-h-screen items-center justify-center">
-                <div className="text-center">
-                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 mx-auto"></div>
-                    <p className="mt-4 text-gray-600">Loading...</p>
-                </div>
-            </div>
-        );
+        return <LoadingSpinner />;
     }
 
     if (isAuthenticated) {
@@ -55,38 +56,40 @@ function App() {
     return (
         <BrowserRouter>
             <AuthProvider>
-                <Routes>
-                    <Route
-                        path="/login"
-                        element={
-                            <PublicRoute>
-                                <Login />
-                            </PublicRoute>
-                        }
-                    />
+                <Suspense fallback={<LoadingSpinner />}>
+                    <Routes>
+                        <Route
+                            path="/login"
+                            element={
+                                <PublicRoute>
+                                    <Login />
+                                </PublicRoute>
+                            }
+                        />
 
-                    <Route
-                        path="/register"
-                        element={
-                            <PublicRoute>
-                                <Register />
-                            </PublicRoute>
-                        }
-                    />
+                        <Route
+                            path="/register"
+                            element={
+                                <PublicRoute>
+                                    <Register />
+                                </PublicRoute>
+                            }
+                        />
 
-                    <Route
-                        path="/calculator"
-                        element={
-                            <ProtectedRoute>
-                                <CalculatorPage />
-                            </ProtectedRoute>
-                        }
-                    />
+                        <Route
+                            path="/calculator"
+                            element={
+                                <ProtectedRoute>
+                                    <CalculatorPage />
+                                </ProtectedRoute>
+                            }
+                        />
 
-                    <Route path="/" element={<Navigate to="/calculator" replace />} />
+                        <Route path="/" element={<Navigate to="/calculator" replace />} />
 
-                    <Route path="*" element={<Navigate to="/calculator" replace />} />
-                </Routes>
+                        <Route path="*" element={<Navigate to="/calculator" replace />} />
+                    </Routes>
+                </Suspense>
             </AuthProvider>
         </BrowserRouter>
     );

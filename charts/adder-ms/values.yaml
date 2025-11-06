@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3
 
 image:
   repository: ghcr.io/arshwaseem/adder-ms
@@ -8,6 +8,8 @@ image:
 service:
   type: ClusterIP
   grpcPort: 9090
+  # HTTP port for health checks
+  httpPort: 8080
 
 env:
   rabbitmq:
@@ -15,10 +17,121 @@ env:
     port: 5672
     username: guest
 
+# Stateless compute - CPU-focused resources
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m      # Doubled for burst arithmetic operations
+    memory: 512Mi   # Moderate - no database/caching needed
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 300m       # Higher baseline for consistent performance
+    memory: 384Mi   # Slightly increased for gRPC overhead
+
+# gRPC health checks via HTTP endpoint
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 2
+  failureThreshold: 2
+
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 5
+  periodSeconds: 3
+  timeoutSeconds: 2
+  failureThreshold: 20  # 1 minute max startup
+
+# Aggressive HPA - stateless compute scales easily
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 15      # Can scale high - no external dependencies
+  targetCPUUtilizationPercentage: 50  # Scale early for compute workload
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30
+      policies:
+      - type: Percent
+        value: 100
+        periodSeconds: 30
+    scaleDown:
+      stabilizationWindowSeconds: 180
+      policies:
+      - type: Pods
+        value: 2
+        periodSeconds: 60
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2
+
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - adder-ms
+        topologyKey: kubernetes.io/hostname
+
+priorityClassName: medium-priority
+
+initContainers:
+  enabled: false  # Disable - use readiness probe
+
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 2      # Can add multiple pods quickly
+    maxUnavailable: 0
+
+dnsConfig:
+  options:
+  - name: ndots
+    value: "1"
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+terminationGracePeriodSeconds: 30
+
+# gRPC server tuning
+grpc_config:
+  max_concurrent_calls_per_connection: 100
+  max_connection_idle: 300  # 5 min
+  max_connection_age: 1800  # 30 min
+  keepalive_time: 120       # 2 min
+  keepalive_timeout: 20     # 20 sec

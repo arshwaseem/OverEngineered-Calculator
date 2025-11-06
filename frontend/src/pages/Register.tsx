@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import type {FormEvent} from 'react';
+import type { FormEvent } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '@/context/AuthContext';
+import { useAuthActions } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,7 +15,8 @@ export default function Register() {
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<boolean>(false);
 
-    const { register } = useAuth();
+    // Use only actions to avoid unnecessary re-renders
+    const { register } = useAuthActions();
     const navigate = useNavigate();
 
     const validateForm = (): boolean => {

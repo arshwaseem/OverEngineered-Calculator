@@ -1,4 +1,5 @@
-replicaCount: 2
+replicaCount: 3  # Increased from 2 - auth is critical path, needs high availability
+
 image:
   repository: ghcr.io/arshwaseem/auth
   tag: latest
@@ -22,10 +23,146 @@ env:
     maxAge: 900
     refreshInterval: 604800
 
+# CRITICAL: Auth service is CPU-intensive (JWT signing/validation, bcrypt)
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m      # Increased from 500m - JWT operations are CPU-bound
+    memory: 768Mi   # Increased from 512Mi - Spring Security + session management
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 500m       # Increased from 200m - ensure priority CPU for auth operations
+    memory: 512Mi   # Increased from 256Mi - critical service needs guaranteed memory
+
+# NEW: Health probes - CRITICAL for auth service availability
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 60      # Auth service takes time to initialize security context
+  periodSeconds: 10
+  timeoutSeconds: 3
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20      # Check early for readiness
+  periodSeconds: 5             # Check frequently - auth is critical path
+  timeoutSeconds: 2            # Fast timeout for quick detection
+  failureThreshold: 2          # Remove quickly if unhealthy
+  successThreshold: 1
+
+# NEW: Startup probe for cold starts
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 10
+  periodSeconds: 5
+  timeoutSeconds: 3
+  failureThreshold: 24         # Allow 2 minutes for startup
+  successThreshold: 1
+
+# NEW: Aggressive HPA - auth service must scale quickly
+autoscaling:
+  enabled: true
+  minReplicas: 3               # Higher minimum due to criticality
+  maxReplicas: 15              # Auth can get hit hard during traffic spikes
+  targetCPUUtilizationPercentage: 55    # Lower target - JWT validation is expensive
+  targetMemoryUtilizationPercentage: 65
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 15    # VERY fast scale up for auth
+      policies:
+      - type: Percent
+        value: 100                       # Double pods quickly
+        periodSeconds: 15
+      - type: Pods
+        value: 3                         # Or add 3 pods
+        periodSeconds: 15
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Slow scale down
+      policies:
+      - type: Percent
+        value: 25                        # Conservative scale down
+        periodSeconds: 60
+
+# NEW: PDB - auth must maintain high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2              # Always keep at least 2 auth pods running
+
+# NEW: Topology spread - distribute auth pods for resilience
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+# NEW: Pod anti-affinity - spread across nodes
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - auth
+        topologyKey: kubernetes.io/hostname
+
+# NEW: High priority for auth service
+priorityClassName: high-priority  # Auth is critical path
+
+# NEW: Disable init container - use readiness probe instead
+initContainers:
+  enabled: false  # Remove blocking wait, rely on app-level health checks
+
+# NEW: Zero-downtime deployment strategy
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 2        # Add 2 extra pods during updates (auth is critical)
+    maxUnavailable: 0  # Never reduce capacity during updates
+
+# NEW: DNS optimization
+dnsConfig:
+  options:
+  - name: ndots
+    value: "1"
+  - name: timeout
+    value: "2"
+  - name: attempts
+    value: "2"
+
+# NEW: Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+  # Auth service specific
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "false"  # Don't evict auth pods
+  
+# NEW: Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# NEW: Termination grace period
+terminationGracePeriodSeconds: 30
+
+# NEW: Service configuration optimizations
+serviceConfig:
+  # Enable session affinity for better JWT cache performance
+  sessionAffinity: ClientIP
+  sessionAffinityConfig:
+    clientIP:
+      timeoutSeconds: 10800  # 3 hours - matches typical JWT lifetime

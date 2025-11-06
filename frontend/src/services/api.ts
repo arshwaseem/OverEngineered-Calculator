@@ -10,10 +10,29 @@ const api: AxiosInstance = axios.create({
     },
 });
 
+// Request queue for handling concurrent requests during token refresh
+let isRefreshing = false;
+let failedQueue: Array<{
+    resolve: (value: unknown) => void;
+    reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: AxiosError | null) => {
+    failedQueue.forEach(prom => {
+        if (error) {
+            prom.reject(error);
+        } else {
+            prom.resolve(null);
+        }
+    });
+    failedQueue = [];
+};
+
 api.interceptors.request.use(
     (config: InternalAxiosRequestConfig) => {
         return config;
-    }, (error: AxiosError) => {
+    },
+    (error: AxiosError) => {
         return Promise.reject(error);
     }
 );
@@ -21,24 +40,42 @@ api.interceptors.request.use(
 api.interceptors.response.use(
     (response: AxiosResponse) => {
         return response;
-    }, async (error: AxiosError) => {
+    },
+    async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        if(originalRequest.url?.includes('/auth/refresh')){
+        // Don't retry if refresh endpoint fails
+        if (originalRequest.url?.includes('/auth/refresh')) {
             window.location.href = "/login";
             return Promise.reject(error);
         }
 
         if (error.response?.status === 401 && !originalRequest._retry) {
+            if (isRefreshing) {
+                // Queue the request while token is being refreshed
+                return new Promise((resolve, reject) => {
+                    failedQueue.push({ resolve, reject });
+                })
+                    .then(() => api(originalRequest))
+                    .catch(err => Promise.reject(err));
+            }
+
             originalRequest._retry = true;
+            isRefreshing = true;
+
             try {
                 await api.post("/auth/refresh");
+                processQueue(null);
                 return api(originalRequest);
             } catch (refreshError) {
+                processQueue(error);
                 window.location.href = "/login";
                 return Promise.reject(refreshError);
+            } finally {
+                isRefreshing = false;
             }
         }
+
         return Promise.reject(error);
     }
 );
@@ -60,23 +97,23 @@ function normalizeOperationResponse(data: unknown): OperationResponse {
 }
 
 const apiService = {
-    register: async(username: string, password: string) : Promise<RegisterResponse> => {
-        const {data} : {data : RegisterResponse}  = await api.post<RegisterResponse>("/auth/register", {
+    register: async (username: string, password: string): Promise<RegisterResponse> => {
+        const { data }: { data: RegisterResponse } = await api.post<RegisterResponse>("/auth/register", {
             username,
             password
         });
         return data;
     },
 
-    login : async(username: string, password: string) : Promise<AuthResponse> => {
-        const {data} : {data : AuthResponse} = await api.post<AuthResponse>("/auth/login", {
+    login: async (username: string, password: string): Promise<AuthResponse> => {
+        const { data }: { data: AuthResponse } = await api.post<AuthResponse>("/auth/login", {
             username,
             password
         });
         return data;
     },
 
-    logout : async() : Promise<void> => {
+    logout: async (): Promise<void> => {
         await api.post<void>("/auth/logout", {});
     },
 

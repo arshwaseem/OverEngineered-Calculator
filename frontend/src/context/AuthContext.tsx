@@ -1,38 +1,51 @@
-import {createContext, useContext, useEffect, useState, useCallback} from "react";
-import type {ReactNode} from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import type { ReactNode } from "react";
 import apiService from "../services/api.ts";
-import type {User, AuthContextType} from "../types";
+import type { User } from "../types";
 
-const AuthContext = createContext<AuthContextType|null>(null);
+// Split context into state and actions for better performance
+interface AuthState {
+    user: User | null;
+    loading: boolean;
+    isAuthenticated: boolean;
+}
+
+interface AuthActions {
+    login: (username: string, password: string) => Promise<{ success: true } | { success: false; error: string }>;
+    register: (username: string, password: string) => Promise<{ success: true } | { success: false; error: string }>;
+    logout: () => Promise<void>;
+}
+
+const AuthStateContext = createContext<AuthState | null>(null);
+const AuthActionsContext = createContext<AuthActions | null>(null);
 
 interface AuthProviderProps {
     children: ReactNode;
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-
     const [user, setUser] = useState<User | null>(null);
     const [loading, setLoading] = useState<boolean>(true);
 
     useEffect(() => {
         checkAuthStatus();
-    },[]);
+    }, []);
 
     const checkAuthStatus = async (): Promise<void> => {
-        try{
+        try {
             setLoading(false);
         } catch (error) {
-            console.error('Auth check failed: ' ,error);
+            console.error('Auth check failed:', error);
             setUser(null);
             setLoading(false);
         }
     };
 
-    const login = useCallback(async (username : string, password: string) => {
-        try{
+    const login = useCallback(async (username: string, password: string) => {
+        try {
             const userData = await apiService.login(username, password);
             setUser({
-                id : userData.userId,
+                id: userData.userId,
                 username: userData.username,
             });
             return { success: true } as const;
@@ -46,8 +59,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }, []);
 
-    const register = useCallback(async (username : string, password: string) => {
-        try{
+    const register = useCallback(async (username: string, password: string) => {
+        try {
             await apiService.register(username, password);
             return { success: true } as const;
         } catch (err: unknown) {
@@ -61,7 +74,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }, []);
 
     const logout = useCallback(async () => {
-        try{
+        try {
             await apiService.logout();
             setUser(null);
         } catch (error) {
@@ -70,25 +83,50 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
     }, []);
 
-    const value : AuthContextType = {
+    // Memoize state object to prevent unnecessary re-renders
+    const state = useMemo<AuthState>(() => ({
         user,
+        loading,
+        isAuthenticated: !!user
+    }), [user, loading]);
+
+    // Memoize actions object to prevent re-creating functions
+    const actions = useMemo<AuthActions>(() => ({
         login,
         register,
-        logout,
-        loading,
-        isAuthenticated : !!user
-    };
+        logout
+    }), [login, register, logout]);
 
-    return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
-
+    return (
+        <AuthStateContext.Provider value={state}>
+            <AuthActionsContext.Provider value={actions}>
+                {children}
+            </AuthActionsContext.Provider>
+        </AuthStateContext.Provider>
+    );
 }
 
-export function  useAuth() : AuthContextType {
-    const context = useContext(AuthContext);
-
-    if(context === null) {
-        throw new Error("useAuth must be used within Auth provider");
+// Custom hooks to consume split contexts
+export function useAuthState(): AuthState {
+    const context = useContext(AuthStateContext);
+    if (context === null) {
+        throw new Error("useAuthState must be used within AuthProvider");
     }
-
     return context;
+}
+
+export function useAuthActions(): AuthActions {
+    const context = useContext(AuthActionsContext);
+    if (context === null) {
+        throw new Error("useAuthActions must be used within AuthProvider");
+    }
+    return context;
+}
+
+// Convenience hook that combines both (use sparingly to avoid unnecessary re-renders)
+export function useAuth() {
+    return {
+        ...useAuthState(),
+        ...useAuthActions()
+    };
 }

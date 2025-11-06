@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 3  # Increased from 2 for better availability
 
 image:
   repository: ghcr.io/arshwaseem/user-ms
@@ -9,17 +9,188 @@ service:
   type: ClusterIP
   port: 8080
 
-
 database:
   host: postgres-users-rw
   port: 5432
   name: users
   secretName: postgres-users-app
 
+# CRITICAL: Database-backed services need balanced CPU/memory
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m      # Increased from 500m - handles DB connection overhead
+    memory: 1024Mi  # Increased from 512Mi - DB result caching, connection pools
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 400m       # Increased from 200m - consistent DB query performance
+    memory: 768Mi   # Increased from 256Mi - connection pool + query caching
+
+# NEW: Health probes - CRITICAL but must account for DB dependency
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 90      # Longer - DB connection pool initialization
+  periodSeconds: 15            # Less frequent - DB queries in health check
+  timeoutSeconds: 5            # Longer - DB queries can be slow
+  failureThreshold: 3
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 30      # Wait for DB connection pool
+  periodSeconds: 10            # Frequent enough for quick failover
+  timeoutSeconds: 5            # Account for DB query latency
+  failureThreshold: 3          # More tolerant - DB can have transient issues
+  successThreshold: 1
+
+# NEW: Startup probe with longer timeout for DB initialization
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 15
+  periodSeconds: 5
+  timeoutSeconds: 5
+  failureThreshold: 30         # Allow up to 2.5 minutes for DB connection + migrations
+  successThreshold: 1
+
+# NEW: Conservative HPA - database connections are limited resource
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 8               # Lower than auth - limited by DB connections
+  targetCPUUtilizationPercentage: 65    # Higher target - avoid DB connection exhaustion
+  targetMemoryUtilizationPercentage: 70
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 60    # Slower than auth - DB connection pools need time
+      policies:
+      - type: Percent
+        value: 50                        # Add 50% more pods
+        periodSeconds: 60
+      - type: Pods
+        value: 2                         # Or add 2 pods
+        periodSeconds: 60
+      selectPolicy: Max
+    scaleDown:
+      stabilizationWindowSeconds: 300   # Standard 5min cooldown
+      policies:
+      - type: Pods
+        value: 1                         # Remove 1 pod at a time
+        periodSeconds: 120
+
+# NEW: PDB for availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2              # Keep at least 2 pods serving traffic
+
+# NEW: Topology spread
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: ScheduleAnyway
+
+# NEW: Pod anti-affinity
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - user-ms
+        topologyKey: kubernetes.io/hostname
+  # OPTIONAL: Node affinity to co-locate with database for lower latency
+  # Uncomment if database runs on specific nodes
+  # nodeAffinity:
+  #   preferredDuringSchedulingIgnoredDuringExecution:
+  #   - weight: 50
+  #     preference:
+  #       matchExpressions:
+  #       - key: workload-type
+  #         operator: In
+  #         values:
+  #         - database
+
+# NEW: Medium priority (not as critical as auth/gateway)
+priorityClassName: medium-priority
+
+# NEW: Init container disabled - use readiness probe
+initContainers:
+  enabled: false  # DB health check should be in readiness probe, not blocking startup
+
+# NEW: Deployment strategy
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1
+    maxUnavailable: 0
+
+# NEW: DNS optimization
+dnsConfig:
+  options:
+  - name: ndots
+    value: "1"
+  - name: timeout
+    value: "2"
+  - name: attempts
+    value: "2"
+
+# NEW: Pod annotations
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+
+# NEW: Security context
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# NEW: Termination grace period - longer for DB connections
+terminationGracePeriodSeconds: 45  # Allow time to drain connections gracefully
+
+# NEW: Database connection pool settings (passed as env vars)
+database_config:
+  # HikariCP connection pool tuning
+  connection_pool:
+    maximum_pool_size: 20      # Max connections per pod
+    minimum_idle: 5            # Minimum idle connections
+    connection_timeout: 30000  # 30s to get connection from pool
+    idle_timeout: 600000       # 10min idle connection lifetime
+    max_lifetime: 1800000      # 30min max connection lifetime
+    leak_detection_threshold: 60000  # 60s - detect connection leaks
+    
+  # Query performance
+  query_timeout: 30            # 30s max query execution time
+  statement_cache_size: 250    # Prepared statement cache per connection
+  
+  # Health check query
+  health_check_query: "SELECT 1"
+  validation_timeout: 5000     # 5s for connection validation
+
+# NEW: JPA/Hibernate tuning
+jpa_config:
+  # Second-level cache (if using)
+  enable_second_level_cache: true
+  cache_provider: "ehcache"    # or "redis" for distributed cache
+  
+  # Query optimization
+  default_batch_fetch_size: 16
+  jdbc_batch_size: 20
+  order_inserts: true
+  order_updates: true
+  
+  # Statistics and monitoring
+  generate_statistics: true
+  log_slow_query_threshold_ms: 100

@@ -1,4 +1,5 @@
-replicaCount: 2
+replicaCount: 3  # Increased from 2 for better availability and load distribution
+
 image:
   repository: ghcr.io/arshwaseem/api-gateway
   tag: latest
@@ -34,10 +35,143 @@ env:
     host: auth
     port: 8080
 
+# CRITICAL: More generous resources to prevent CPU throttling
 resources:
   limits:
-    cpu: 500m
-    memory: 512Mi
+    cpu: 1000m      # Increased from 500m - Spring Boot benefits from more CPU
+    memory: 768Mi   # Increased from 512Mi - gateway aggregates responses
   requests:
-    cpu: 200m
-    memory: 256Mi
+    cpu: 500m       # Increased from 200m - ensures pods get priority CPU time
+    memory: 512Mi   # Increased from 256Mi - reduces GC pressure
+
+# NEW: Health probes for proper traffic routing
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 60      # Give app time to fully start
+  periodSeconds: 10            # Check every 10s
+  timeoutSeconds: 3            # Fast timeout
+  failureThreshold: 3          # Allow 3 failures before restart
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: 8080
+  initialDelaySeconds: 20      # Start checking early
+  periodSeconds: 5             # Check frequently for fast recovery
+  timeoutSeconds: 2            # Fast timeout for quick detection
+  failureThreshold: 2          # Remove from service quickly
+  successThreshold: 1
+
+# NEW: Startup probe to handle cold starts separately
+startupProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: 8080
+  initialDelaySeconds: 10      # Start checking after 10s
+  periodSeconds: 5             # Check every 5s during startup
+  timeoutSeconds: 3
+  failureThreshold: 24         # Allow up to 2 minutes for startup (24 * 5s)
+  successThreshold: 1
+
+# NEW: Horizontal Pod Autoscaling for traffic spikes
+autoscaling:
+  enabled: true
+  minReplicas: 3
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 60      # Scale before saturation
+  targetMemoryUtilizationPercentage: 70
+  # Behavior for faster scale-up, slower scale-down
+  behavior:
+    scaleUp:
+      stabilizationWindowSeconds: 30      # Quick scale up
+      policies:
+      - type: Percent
+        value: 100                         # Double pods
+        periodSeconds: 30
+      - type: Pods
+        value: 2                           # Or add 2 pods
+        periodSeconds: 30
+      selectPolicy: Max                    # Use the more aggressive policy
+    scaleDown:
+      stabilizationWindowSeconds: 300     # Wait 5min before scaling down
+      policies:
+      - type: Percent
+        value: 50                          # Remove half
+        periodSeconds: 60
+
+# NEW: Pod Disruption Budget to maintain availability during updates
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 2  # Always keep at least 2 pods running
+
+# NEW: Topology spread for better resilience and lower latency
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname     # Spread across nodes
+  whenUnsatisfiable: ScheduleAnyway       # Soft constraint
+  
+# NEW: Pod anti-affinity as backup to topology spread
+affinity:
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: app.kubernetes.io/name
+            operator: In
+            values:
+            - api-gateway
+        topologyKey: kubernetes.io/hostname
+
+# NEW: Priority class for critical gateway pods
+priorityClassName: high-priority  # You'll need to create this PriorityClass
+
+# NEW: Configurable init container behavior
+initContainers:
+  enabled: false  # DISABLE blocking init container - use readiness probes instead
+  # The init container causes 20-30s delay on every pod start
+  # Instead, rely on Spring Boot Actuator health checks which will mark
+  # pod as not-ready until dependencies are available
+
+# NEW: Deployment strategy for zero-downtime updates
+deploymentStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxSurge: 1        # Add 1 extra pod during updates
+    maxUnavailable: 0  # Never take down pods until replacement is ready
+
+# NEW: DNS config for faster service discovery
+dnsConfig:
+  options:
+  - name: ndots
+    value: "1"  # Reduce DNS search attempts for faster resolution
+  - name: timeout
+    value: "2"
+  - name: attempts
+    value: "2"
+
+# NEW: Pod annotations for performance
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "8080"
+  prometheus.io/path: "/actuator/prometheus"
+  # For service mesh optimization (if using Istio/Linkerd)
+  sidecar.istio.io/proxyCPU: "100m"
+  sidecar.istio.io/proxyMemory: "128Mi"
+
+# NEW: Security context (doesn't impact latency but best practice)
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  fsGroup: 1000
+  capabilities:
+    drop:
+    - ALL
+
+# NEW: Termination grace period
+terminationGracePeriodSeconds: 30  # Give time for graceful shutdown

@@ -1,19 +1,20 @@
-import {useState} from "react";
-import {useAuth} from "@/context/AuthContext.tsx";
-import {Link, useNavigate} from "react-router-dom";
-import {Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter} from "@/components/ui/card.tsx";
-import {Button} from "@/components/ui/button.tsx";
-import {Input} from "@/components/ui/input.tsx";
-import {Label} from "@/components/ui/label.tsx";
-import {motion} from "motion/react";
+import { useState } from "react";
+import { useAuthActions } from "@/context/AuthContext.tsx";
+import { Link, useNavigate } from "react-router-dom";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card.tsx";
+import { Button } from "@/components/ui/button.tsx";
+import { Input } from "@/components/ui/input.tsx";
+import { Label } from "@/components/ui/label.tsx";
+import { motion } from "motion/react";
 
-export default function Login () {
-    const[username, setUsername] = useState<string>('');
-    const[password, setPassword] = useState<string>('');
-    const[loading, setLoading] = useState<boolean>(false);
-    const[error, setError] = useState<string | null>(null);
+export default function Login() {
+    const [username, setUsername] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
+    const [loading, setLoading] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
 
-    const {login} = useAuth();
+    // Use only actions to avoid unnecessary re-renders from auth state changes
+    const { login } = useAuthActions();
     const navigate = useNavigate();
 
     const MotionButton = motion.create(Button);
@@ -21,7 +22,7 @@ export default function Login () {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
 
-        if(!username || !password){
+        if (!username || !password) {
             setError("Please fill in all fields");
             return;
         }
@@ -30,17 +31,16 @@ export default function Login () {
         setLoading(true);
 
         try {
-
             const result = await login(username, password);
 
-            if(result.success) {
+            if (result.success) {
                 navigate("/calculator");
             } else {
                 setError(result.error ?? "Login Failed");
             }
         } catch (error) {
             setError("An error occurred while trying to log in");
-            console.error("Login Error: ",error);
+            console.error("Login Error: ", error);
         } finally {
             setLoading(false);
         }
@@ -59,7 +59,6 @@ export default function Login () {
                 <form onSubmit={handleSubmit} className="flex flex-col gap-y-10">
                     <CardContent className="flex flex-col gap-y-8">
                         {error && (
-
                             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
                                 {error}
                             </div>

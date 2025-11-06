@@ -1,51 +1,79 @@
 global:
-  imagePullPolicy: Always
+  imagePullPolicy: IfNotPresent  # Changed from Always - only pull if not present
   environment: dev
   imageTag: tracing
 
+# Infrastructure Components
 rabbitmq:
   enabled: true
   replicaCount: 1
-
   image:
     repository: rabbitmq
     tag: 3-management
     pullPolicy: IfNotPresent
-
   service:
     amqpPort: 5672
     managementPort: 15672
-
   persistence:
     enabled: true
-    size: 1Gi
+    size: 2Gi  # Increased from 1Gi for history queue
     storageClass: local-path
+  # Resource limits for RabbitMQ
+  resources:
+    requests:
+      memory: 512Mi
+      cpu: 250m
+    limits:
+      memory: 1Gi
+      cpu: 500m
 
+# Database Clusters
 cnpg-postgres-users:
   enabled: true
   clusterName: postgres-users
-  instances: 2
+  instances: 2  # Keep 2 for HA
   storage:
-    size: 1Gi
+    size: 5Gi  # Increased from 1Gi
     storageClass: local-path
   database:
     name: users
     owner: app
+  # PostgreSQL tuning
+  postgresql:
+    parameters:
+      max_connections: "200"  # Increased to support 8 user-ms pods
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      work_mem: "16MB"
+      maintenance_work_mem: "128MB"
 
 cnpg-postgres-history:
   enabled: true
   clusterName: postgres-history
-  instances: 2
+  instances: 2  # Keep 2 for HA
   storage:
-    size: 1Gi
+    size: 10Gi  # Increased from 1Gi - history grows faster
     storageClass: local-path
   database:
     name: history
     owner: app
+  # PostgreSQL tuning for write-heavy workload
+  postgresql:
+    parameters:
+      max_connections: "200"
+      shared_buffers: "256MB"
+      effective_cache_size: "1GB"
+      work_mem: "16MB"
+      maintenance_work_mem: "128MB"
+      # Write optimization
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "16MB"
+      default_statistics_target: "100"
 
+# Application Services - Coordinated Configuration
 user-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/user-ms
     tag: tracing
@@ -54,11 +82,29 @@ user-ms:
     host: postgres-users-rw
     port: 5432
     name: users
-    secret: postgres-users-app
+    secretName: postgres-users-app  # Fixed typo - was 'secret'
+  # Override with optimized values
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+    requests:
+      cpu: 400m
+      memory: 768Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 8
+    targetCPUUtilizationPercentage: 65
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 history-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/history-ms
     tag: tracing
@@ -67,11 +113,33 @@ history-ms:
     host: postgres-history-rw
     port: 5432
     name: history
-    secret: postgres-history-app
+    secretName: postgres-history-app  # Fixed typo
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    secretName: rabbitmq-secret
+  # Override with optimized values
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 1536Mi
+    requests:
+      cpu: 500m
+      memory: 1024Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 auth:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/auth
     tag: tracing
@@ -80,10 +148,34 @@ auth:
     user-ms:
       host: user-ms
       port: 8080
+  # Override with optimized values
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 55
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  serviceConfig:
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+  initContainers:
+    enabled: false
 
+# gRPC Services - All identical config
 adder-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/adder-ms
     tag: tracing
@@ -93,10 +185,28 @@ adder-ms:
       host: rabbitmq
       port: 5672
       username: guest
+  # gRPC service optimized config
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 50
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 subtractor-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/subtractor-ms
     tag: tracing
@@ -106,10 +216,28 @@ subtractor-ms:
       host: rabbitmq
       port: 5672
       username: guest
+  # Same as adder-ms
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 50
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 multiplier-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/multiplier-ms
     tag: tracing
@@ -119,10 +247,28 @@ multiplier-ms:
       host: rabbitmq
       port: 5672
       username: guest
+  # Same as adder-ms
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 50
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 divider-ms:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/divider-ms
     tag: tracing
@@ -132,10 +278,28 @@ divider-ms:
       host: rabbitmq
       port: 5672
       username: guest
+  # Same as adder-ms
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 512Mi
+    requests:
+      cpu: 300m
+      memory: 384Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 15
+    targetCPUUtilizationPercentage: 50
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 api-gateway:
   enabled: true
-  replicaCount: 2
+  replicaCount: 3  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/api-gateway
     tag: tracing
@@ -145,30 +309,43 @@ api-gateway:
       host: rabbitmq
       port: 5672
       username: guest
-
     adder-ms:
       host: adder-ms
       port: 9090
-
     subtractor-ms:
       host: subtractor-ms
       port: 9090
-
     multiplier-ms:
       host: multiplier-ms
       port: 9090
-
     divider-ms:
       host: divider-ms
       port: 9090
-
     auth:
       host: auth
       port: 8080
+  # Override with optimized values
+  resources:
+    limits:
+      cpu: 1000m
+      memory: 768Mi
+    requests:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 60
+  podDisruptionBudget:
+    enabled: true
+    minAvailable: 2
+  initContainers:
+    enabled: false
 
 frontend:
   enabled: true
-  replicaCount: 2
+  replicaCount: 2  # Keep frontend at 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/frontend
     tag: tracing
@@ -179,8 +356,15 @@ frontend:
   api-gateway:
     host: api-gateway
     port: 8080
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 100m
+    limits:
+      memory: 256Mi
+      cpu: 200m
 
-
+# Observability Stack - Optimized
 kube-prometheus-stack:
   enabled: true
 
@@ -190,6 +374,15 @@ kube-prometheus-stack:
       retention: 7d
       retentionSize: 5GB
 
+      # Resource limits for prometheus
+      resources:
+        requests:
+          memory: 1Gi
+          cpu: 500m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+
       storageSpec:
         volumeClaimTemplate:
           spec:
@@ -197,16 +390,17 @@ kube-prometheus-stack:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 10Gi
+                storage: 20Gi  # Increased from 10Gi
 
       serviceMonitorSelector: {}
       serviceMonitorNamespaceSelector: {}
-
       podMonitorSelector: {}
       podMonitorNamespaceSelector: {}
 
       additionalScrapeConfigs:
         - job_name: 'kubernetes-pods'
+          scrape_interval: 15s  # Changed from 30s for better granularity
+          scrape_timeout: 10s
           kubernetes_sd_configs:
             - role: pod
               namespaces:
@@ -216,37 +410,30 @@ kube-prometheus-stack:
             - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
               action: keep
               regex: true
-
-            - source_labels: [ __address__, __meta_kubernetes_pod_annotation_prometheus_io_port ]
+            - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
               action: replace
               regex: ([^:]+)(?::\d+)?;(\d+)
               replacement: ${1}:${2}
               target_label: __address__
-
             - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
               action: replace
               regex: (.+)
               target_label: __metrics_path__
-
             - source_labels: [__meta_kubernetes_pod_name]
               action: replace
               target_label: pod
-
             - source_labels: [__meta_kubernetes_namespace]
               action: replace
               target_label: namespace
-
-            - source_labels: [__meta_kubernetes_pod_label_app]
+            - source_labels: [__meta_kubernetes_pod_label_app_kubernetes_io_name]
               action: replace
               target_label: service
 
       enableFeatures:
         - exemplar-storage
 
-
   grafana:
     enabled: true
-
     adminPassword: admin
 
     resources:
@@ -260,7 +447,7 @@ kube-prometheus-stack:
     persistence:
       enabled: true
       storageClassName: local-path
-      size: 2Gi
+      size: 5Gi  # Increased from 2Gi
 
     service:
       type: LoadBalancer
@@ -271,9 +458,9 @@ kube-prometheus-stack:
         type: prometheus
         access: proxy
         url: "http://{{ .Release.Name }}-kube-prometheus-st-prometheus.{{ .Release.Namespace }}.svc.cluster.local:9090"
-        isDefault: false
+        isDefault: true  # Changed to default
         jsonData:
-          timeInterval: 30s
+          timeInterval: 15s  # Changed from 30s
           exemplarTraceIdDestinations:
             - name: trace_id
               datasourceUid: tempo
@@ -301,7 +488,11 @@ kube-prometheus-stack:
                 value: 'service'
             queries:
               - name: 'TPS Last 5 Min'
-                query: 'sum(rate(http_server_requests_seconds_count[5m]))'
+                query: 'sum(rate(http_server_requests_seconds_count{service="$service"}[5m]))'
+              - name: 'CPU Usage'
+                query: 'rate(container_cpu_usage_seconds_total{pod=~"$service.*"}[5m])'
+              - name: 'Memory Usage'
+                query: 'container_memory_working_set_bytes{pod=~"$service.*"}'
           serviceMap:
             datasourceUid: 'prometheus'
           nodeGraph:
@@ -326,15 +517,17 @@ kube-prometheus-stack:
           gnetId: 6756
           revision: 1
           datasource: Prometheus
-
         jvm-micrometer:
           gnetId: 4701
           revision: 7
           datasource: Prometheus
-
         kubernetes-cluster:
           gnetId: 7249
           revision: 1
+          datasource: Prometheus
+        kubernetes-apiserver:
+          gnetId: 15761
+          revision: 16
           datasource: Prometheus
 
   alertmanager:
@@ -354,26 +547,23 @@ kube-prometheus-stack:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 1Gi
+                storage: 2Gi  # Increased from 1Gi
 
   kubeStateMetrics:
     enabled: true
-
   nodeExporter:
     enabled: true
-
   prometheusOperator:
     enabled: true
     resources:
       requests:
         memory: 128Mi
         cpu: 100m
-
       limits:
         memory: 256Mi
         cpu: 500m
 
-
+# Tempo - Tracing Backend
 tempo:
   enabled: true
 
@@ -383,11 +573,11 @@ tempo:
 
     resources:
       requests:
-        memory: 256Mi
-        cpu: 100m
+        memory: 512Mi  # Increased from 256Mi
+        cpu: 200m      # Increased from 100m
       limits:
-        memory: 1Gi
-        cpu: 500m
+        memory: 2Gi    # Increased from 1Gi
+        cpu: 1000m     # Increased from 500m
 
     retention: 168h
 
@@ -412,38 +602,38 @@ tempo:
             endpoint: 0.0.0.0:14250
           thrift_http:
             endpoint: 0.0.0.0:14268
-
       zipkin:
         endpoint: 0.0.0.0:9411
 
   persistence:
     enabled: true
     storageClassName: local-path
-    size: 10Gi
+    size: 20Gi  # Increased from 10Gi
 
   service:
     type: ClusterIP
 
   serviceMonitor:
     enabled: true
-    interval: 30s
+    interval: 15s  # Changed from 30s
 
+# OpenTelemetry Collector
 opentelemetry-collector:
   enabled: true
 
   mode: deployment
-  replicaCount: 1
+  replicaCount: 2  # Increased from 1 for HA
 
   image:
     repository: otel/opentelemetry-collector-contrib
 
   resources:
     requests:
-      memory: 256Mi
-      cpu: 100m
+      memory: 512Mi  # Increased from 256Mi
+      cpu: 200m      # Increased from 100m
     limits:
-      memory: 512Mi
-      cpu: 500m
+      memory: 1Gi    # Increased from 512Mi
+      cpu: 1000m     # Increased from 500m
 
   config:
     receivers:
@@ -458,19 +648,19 @@ opentelemetry-collector:
         config:
           scrape_configs:
             - job_name: 'otel-collector'
-              scrape_interval: 30s
+              scrape_interval: 15s  # Changed from 30s
               static_configs:
                 - targets: ['localhost:8888']
 
     processors:
       batch:
-        timeout: 10s
-        send_batch_size: 1024
+        timeout: 5s      # Changed from 10s for faster processing
+        send_batch_size: 2048  # Increased from 1024
 
       memory_limiter:
         check_interval: 1s
-        limit_mib: 400
-        spike_limit_mib: 100
+        limit_mib: 800   # Increased from 400
+        spike_limit_mib: 200  # Increased from 100
 
       resource:
         attributes:
@@ -486,16 +676,19 @@ opentelemetry-collector:
           - key: service.namespace
             from_attribute: k8s.namespace.name
             action: upsert
-
           - key: service.instance.id
             from_attribute: k8s.pod.name
             action: upsert
 
     exporters:
       otlp/tempo:
-        endpoint: "{{ .Release.Name }}-tempo.{{ .Release.Namespace}}.svc.cluster.local:4317"
+        endpoint: "{{ .Release.Name }}-tempo.{{ .Release.Namespace }}.svc.cluster.local:4317"
         tls:
           insecure: true
+        sending_queue:
+          enabled: true
+          num_consumers: 10
+          queue_size: 1000
 
       debug:
         verbosity: basic
