@@ -1,0 +1,296 @@
+# Ultra-Minimal Local Configuration
+# For: 8th gen i7, 16GB RAM, WSL2 - SURVIVAL MODE
+# 
+# This configuration prioritizes getting ALL pods running over performance.
+# Once stable, you can gradually increase resources.
+#
+# Usage: helm install oe-calculator ./oe-calculator -f ./oe-calculator/values-minimal.yaml -n dev
+#
+# Target: ~4-5GB total memory usage
+
+global:
+  imagePullPolicy: IfNotPresent
+  environment: local
+  imageTag: tracing
+
+# ============================================================================
+# INFRASTRUCTURE - Bare Minimum
+# ============================================================================
+
+rabbitmq:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  persistence:
+    enabled: true
+    size: 512Mi  # Minimal
+    storageClass: local-path
+  resources:
+    requests:
+      memory: 128Mi  # Bare minimum for RabbitMQ
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 200m
+  env:
+    # RabbitMQ memory tuning - CRITICAL for stability
+    - name: RABBITMQ_VM_MEMORY_HIGH_WATERMARK
+      value: "0.6"  # Trigger flow control at 60% of limit (153Mi)
+    - name: RABBITMQ_VM_MEMORY_HIGH_WATERMARK_PAGING_RATIO
+      value: "0.75"  # Start paging at 75% of watermark
+
+
+
+# ============================================================================
+# DATABASES - Single instance, minimal resources
+# ============================================================================
+
+cnpg-postgres-users:
+  enabled: true
+  clusterName: postgres-users
+  instances: 1
+  storage:
+    size: 1Gi  # Minimal
+    storageClass: local-path
+  postgresql:
+    parameters:
+      max_connections: "50"  # Reduced from 100
+      shared_buffers: "64MB"  # Minimal
+      effective_cache_size: "256MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "32MB"
+  resources:
+    requests:
+      memory: 128Mi  # Bare minimum for PostgreSQL
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 300m
+
+cnpg-postgres-history:
+  enabled: true
+  clusterName: postgres-history
+  instances: 1
+  storage:
+    size: 2Gi
+    storageClass: local-path
+  postgresql:
+    parameters:
+      max_connections: "50"
+      shared_buffers: "64MB"
+      effective_cache_size: "256MB"
+      work_mem: "4MB"
+      maintenance_work_mem: "32MB"
+      checkpoint_completion_target: "0.9"
+      wal_buffers: "4MB"
+  resources:
+    requests:
+      memory: 128Mi
+      cpu: 50m
+    limits:
+      memory: 256Mi
+      cpu: 300m
+
+# ============================================================================
+# APPLICATION SERVICES - SINGLE REPLICA ONLY
+# ============================================================================
+
+user-ms:
+  enabled: true
+  replicaCount: 1  # Reduced to 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 300m      # Heavily reduced
+      memory: 384Mi  # Reduced
+    requests:
+      cpu: 100m
+      memory: 256Mi  # Reduced
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+history-ms:
+  enabled: true
+  replicaCount: 1  # Reduced to 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 300m
+      memory: 512Mi  # History MS needs more memory
+    requests:
+      cpu: 100m
+      memory: 384Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+auth:
+  enabled: true
+  replicaCount: 1  # Reduced to 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 300m
+      memory: 384Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  serviceConfig:
+    sessionAffinity: ClientIP
+    sessionAffinityConfig:
+      clientIP:
+        timeoutSeconds: 10800
+  initContainers:
+    enabled: true
+
+# ============================================================================
+# gRPC SERVICES - Ultra minimal
+# ============================================================================
+
+adder-ms:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 192Mi  # Reduced
+    requests:
+      cpu: 50m
+      memory: 128Mi  # Reduced
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+subtractor-ms:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 192Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+multiplier-ms:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 192Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+divider-ms:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 200m
+      memory: 192Mi
+    requests:
+      cpu: 50m
+      memory: 128Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+# ============================================================================
+# API GATEWAY
+# ============================================================================
+
+api-gateway:
+  enabled: true
+  replicaCount: 1  # Reduced to 1
+  image:
+    pullPolicy: IfNotPresent
+  resources:
+    limits:
+      cpu: 300m
+      memory: 384Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+  autoscaling:
+    enabled: false
+  podDisruptionBudget:
+    enabled: false
+  initContainers:
+    enabled: true
+
+# ============================================================================
+# FRONTEND
+# ============================================================================
+
+frontend:
+  enabled: true
+  replicaCount: 1
+  image:
+    pullPolicy: IfNotPresent
+  service:
+    type: LoadBalancer
+    port: 80
+  resources:
+    requests:
+      memory: 32Mi   # Minimal for nginx
+      cpu: 25m
+    limits:
+      memory: 64Mi
+      cpu: 100m
+
+# ============================================================================
+# OBSERVABILITY - DISABLED FOR NOW
+# Enable these AFTER your app services are stable
+# ============================================================================
+
+kube-prometheus-stack:
+  enabled: false  # DISABLED - Enable after app is stable
+
+tempo:
+  enabled: false  # DISABLED - Enable after app is stable
+
+opentelemetry-collector:
+  enabled: false  # DISABLED - Enable after app is stable

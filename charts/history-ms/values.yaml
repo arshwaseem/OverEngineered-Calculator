@@ -20,7 +20,8 @@ database:
 rabbitmq:
   host: rabbitmq
   port: 5672
-  secretName: rabbitmq-secret
+  secretName: history-secret
+  username: guest
 
 # CRITICAL: Hybrid workload needs balanced resources
 # - Database operations (reads/writes)
@@ -121,9 +122,6 @@ affinity:
             - history-ms
         topologyKey: kubernetes.io/hostname
 
-# NEW: Medium priority (async processing, not critical path)
-priorityClassName: medium-priority
-
 # NEW: Init container disabled
 initContainers:
   enabled: false
@@ -162,16 +160,6 @@ securityContext:
 
 # NEW: Longer termination for message drain + DB connections
 terminationGracePeriodSeconds: 60  # Extra time for RabbitMQ message drain
-
-# NEW: Database connection pool (from application.properties)
-database_config:
-  connection_pool:
-    maximum_pool_size: 20      # From app config
-    minimum_idle: 10           # Higher than user-ms - batch writes benefit from warm connections
-    connection_timeout: 10000  # 10s
-    idle_timeout: 300000       # 5min
-    max_lifetime: 600000       # 10min
-    leak_detection_threshold: 60000
 
 # NEW: JPA/Hibernate batch configuration (from app config)
 jpa_config:

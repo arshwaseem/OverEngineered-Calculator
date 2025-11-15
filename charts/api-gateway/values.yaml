@@ -128,9 +128,6 @@ affinity:
             - api-gateway
         topologyKey: kubernetes.io/hostname
 
-# NEW: Priority class for critical gateway pods
-priorityClassName: high-priority  # You'll need to create this PriorityClass
-
 # NEW: Configurable init container behavior
 initContainers:
   enabled: false  # DISABLE blocking init container - use readiness probes instead

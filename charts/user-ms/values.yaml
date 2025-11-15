@@ -118,9 +118,6 @@ affinity:
   #         values:
   #         - database
 
-# NEW: Medium priority (not as critical as auth/gateway)
-priorityClassName: medium-priority
-
 # NEW: Init container disabled - use readiness probe
 initContainers:
   enabled: false  # DB health check should be in readiness probe, not blocking startup
@@ -160,29 +157,10 @@ securityContext:
 # NEW: Termination grace period - longer for DB connections
 terminationGracePeriodSeconds: 45  # Allow time to drain connections gracefully
 
-# NEW: Database connection pool settings (passed as env vars)
-database_config:
-  # HikariCP connection pool tuning
-  connection_pool:
-    maximum_pool_size: 20      # Max connections per pod
-    minimum_idle: 5            # Minimum idle connections
-    connection_timeout: 30000  # 30s to get connection from pool
-    idle_timeout: 600000       # 10min idle connection lifetime
-    max_lifetime: 1800000      # 30min max connection lifetime
-    leak_detection_threshold: 60000  # 60s - detect connection leaks
-    
-  # Query performance
-  query_timeout: 30            # 30s max query execution time
-  statement_cache_size: 250    # Prepared statement cache per connection
-  
-  # Health check query
-  health_check_query: "SELECT 1"
-  validation_timeout: 5000     # 5s for connection validation
-
 # NEW: JPA/Hibernate tuning
 jpa_config:
   # Second-level cache (if using)
-  enable_second_level_cache: true
+  enable_second_level_cache: false
   cache_provider: "ehcache"    # or "redis" for distributed cache
   
   # Query optimization

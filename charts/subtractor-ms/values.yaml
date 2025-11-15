@@ -97,8 +97,6 @@ affinity:
             - subtractor-ms
         topologyKey: kubernetes.io/hostname
 
-priorityClassName: medium-priority
-
 initContainers:
   enabled: false  # Disable - use readiness probe
 

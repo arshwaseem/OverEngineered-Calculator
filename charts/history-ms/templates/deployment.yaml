@@ -64,7 +64,7 @@ spec:
               echo "PostgreSQL ready"
               
               echo "Waiting for RabbitMQ..."
-              until nc -z {{ .Values.rabbitmq.host }} {{ .Values.rabbitmq.port }}; do
+              until nc -z {{ .Release.Name }}-{{ .Values.rabbitmq.host }} {{ .Values.rabbitmq.port }}; do
                 sleep 5
               done
               echo "RabbitMQ ready"
@@ -98,31 +98,12 @@ spec:
             - name: SPRING_RABBITMQ_PORT
               value: {{ .Values.rabbitmq.port | quote }}
             - name: SPRING_RABBITMQ_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.rabbitmq.secretName }}
-                  key: username
+              value: {{ .Values.rabbitmq.username }}
             - name: SPRING_RABBITMQ_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.rabbitmq.secretName }}
-                  key: password
-            
-            {{- if .Values.database_config }}
-            # HikariCP connection pool
-            - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
-              value: {{ .Values.database_config.connection_pool.maximum_pool_size | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE
-              value: {{ .Values.database_config.connection_pool.minimum_idle | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
-              value: {{ .Values.database_config.connection_pool.connection_timeout | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT
-              value: {{ .Values.database_config.connection_pool.idle_timeout | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_MAX_LIFETIME
-              value: {{ .Values.database_config.connection_pool.max_lifetime | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD
-              value: {{ .Values.database_config.connection_pool.leak_detection_threshold | quote }}
-            {{- end }}
+                  name: {{ .Release.Name }}-{{ .Values.rabbitmq.secretName }}
+                  key: rabbitmq-password
             
             {{- if .Values.jpa_config }}
             # JPA/Hibernate batch configuration

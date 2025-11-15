@@ -42,7 +42,7 @@ RUN cd dist && \
     find . -type f > /tmp/files.txt
 
 # ============================================
-# Stage 3: Nginx Runtime (Optimized)
+# Stage 3: Nginx Runtime (Optimized for Non-Root)
 # ============================================
 FROM nginx:1.27-alpine
 
@@ -60,14 +60,21 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 RUN chown -R nginx:nginx /usr/share/nginx/html && \
     chmod -R 755 /usr/share/nginx/html
 
-# Create optimized nginx configuration
+# ✅ CRITICAL FIX: Create writable directories for nginx user
+RUN mkdir -p /tmp/nginx-cache /tmp/nginx-run /tmp/nginx-body && \
+    chown -R nginx:nginx /tmp/nginx-cache /tmp/nginx-run /tmp/nginx-body && \
+    # Also ensure nginx user can write to log directories
+    touch /var/log/nginx/access.log /var/log/nginx/error.log && \
+    chown -R nginx:nginx /var/log/nginx /var/cache/nginx
+
+# Create optimized nginx configuration (NON-ROOT COMPATIBLE)
 RUN cat > /etc/nginx/nginx.conf <<'EOF'
-user nginx;
+# ✅ Remove 'user' directive - will run as whatever user starts nginx
 worker_processes auto;
 worker_rlimit_nofile 65535;
 
 error_log /var/log/nginx/error.log warn;
-pid /var/run/nginx.pid;
+pid /tmp/nginx-run/nginx.pid;  # ✅ FIXED: Use /tmp instead of /var/run
 
 events {
     worker_connections 4096;
@@ -92,6 +99,13 @@ http {
     keepalive_requests 100;
     types_hash_max_size 2048;
     server_tokens off;
+
+    # ✅ FIXED: Use /tmp for temp paths (writable by nginx user)
+    client_body_temp_path /tmp/nginx-body/client_body;
+    proxy_temp_path /tmp/nginx-body/proxy;
+    fastcgi_temp_path /tmp/nginx-body/fastcgi;
+    uwsgi_temp_path /tmp/nginx-body/uwsgi;
+    scgi_temp_path /tmp/nginx-body/scgi;
 
     client_body_buffer_size 16K;
     client_header_buffer_size 1k;
@@ -128,13 +142,14 @@ EOF
 
 # Create optimized site configuration
 RUN cat > /etc/nginx/conf.d/default.conf <<'EOF'
-# Upstream for API Gateway
+# Upstream for API Gateway (will be overridden by ConfigMap)
 upstream api_gateway {
     server api-gateway:8080;
     keepalive 32;
 }
 
-proxy_cache_path /var/cache/nginx/api levels=1:2 keys_zone=api_cache:10m max_size=100m inactive=60m use_temp_path=off;
+# ✅ FIXED: Use /tmp for cache (writable by nginx user)
+proxy_cache_path /tmp/nginx-cache/api levels=1:2 keys_zone=api_cache:10m max_size=100m inactive=60m use_temp_path=off;
 
 server {
     listen 80;
@@ -191,7 +206,7 @@ server {
         proxy_buffers 8 4k;
         proxy_busy_buffers_size 8k;
         
-        # Dont cache by default (customize per endpoint if needed)
+        # Don't cache by default (customize per endpoint if needed)
         proxy_no_cache 1;
         proxy_cache_bypass 1;
         
@@ -228,6 +243,7 @@ server {
             expires off;
         }
     }
+
     location ~ /\. {
         deny all;
         access_log off;
@@ -236,15 +252,15 @@ server {
 }
 EOF
 
-# Create cache directory
-RUN mkdir -p /var/cache/nginx/api && \
-    chown -R nginx:nginx /var/cache/nginx
+# ✅ FIXED: Ensure cache directory exists and is owned by nginx
+RUN mkdir -p /tmp/nginx-cache/api && \
+    chown -R nginx:nginx /tmp/nginx-cache
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD curl -f http://localhost/health || exit 1
 
-# Switch to non-root user
+# ✅ Switch to non-root user BEFORE starting
 USER nginx
 
 EXPOSE 80

@@ -115,9 +115,6 @@ affinity:
             - auth
         topologyKey: kubernetes.io/hostname
 
-# NEW: High priority for auth service
-priorityClassName: high-priority  # Auth is critical path
-
 # NEW: Disable init container - use readiness probe instead
 initContainers:
   enabled: false  # Remove blocking wait, rely on app-level health checks

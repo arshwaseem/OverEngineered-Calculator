@@ -86,24 +86,6 @@ spec:
                   name: {{ .Values.database.secretName }}
                   key: password
             
-            {{- if .Values.database_config }}
-            # HikariCP connection pool configuration
-            - name: SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE
-              value: {{ .Values.database_config.connection_pool.maximum_pool_size | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE
-              value: {{ .Values.database_config.connection_pool.minimum_idle | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TIMEOUT
-              value: {{ .Values.database_config.connection_pool.connection_timeout | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_IDLE_TIMEOUT
-              value: {{ .Values.database_config.connection_pool.idle_timeout | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_MAX_LIFETIME
-              value: {{ .Values.database_config.connection_pool.max_lifetime | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_LEAK_DETECTION_THRESHOLD
-              value: {{ .Values.database_config.connection_pool.leak_detection_threshold | quote }}
-            - name: SPRING_DATASOURCE_HIKARI_CONNECTION_TEST_QUERY
-              value: {{ .Values.database_config.health_check_query | quote }}
-            {{- end }}
-            
             {{- if .Values.jpa_config }}
             # JPA/Hibernate configuration
             - name: SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_BATCH_SIZE
