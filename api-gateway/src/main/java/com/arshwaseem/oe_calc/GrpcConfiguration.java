@@ -3,7 +3,6 @@ package com.arshwaseem.oe_calc;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.opentelemetry.api.OpenTelemetry;
-import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,11 +38,6 @@ public class GrpcConfiguration {
     private String divideHost;
     @Value("${grpc.divide.port:50051}")
     private int dividePort;
-
-    @Bean
-    public GrpcTelemetry grpcTelemetry(){
-        return GrpcTelemetry.create(openTelemetry);
-    }
 
     private ManagedChannel createOptimizedChannel(String host, int port){
 
