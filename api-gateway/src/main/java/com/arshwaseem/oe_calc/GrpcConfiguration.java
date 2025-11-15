@@ -57,7 +57,6 @@ public class GrpcConfiguration {
                 .keepAliveWithoutCalls(true)
                 .idleTimeout(5, TimeUnit.MINUTES)
                 .maxInboundMessageSize(4*1024 * 1024)
-                .directExecutor()
                 .intercept(grpcTelemetry().newClientInterceptor())
                 .build();
 
