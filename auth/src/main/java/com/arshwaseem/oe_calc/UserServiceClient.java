@@ -28,6 +28,7 @@ public class UserServiceClient {
                     .uri("/user/username?username=" + username)
                     .retrieve()
                     .bodyToMono(UserDTO.class)
+                    .contextCapture()
                     .block();
         } catch (Exception e){
             log.error("Error Fetching From User Service: {}", e.getMessage());
@@ -45,6 +46,7 @@ public class UserServiceClient {
                     .bodyValue(userDTO)
                     .retrieve()
                     .toEntity(Void.class)
+                    .contextCapture()
                     .block();
         } catch (Exception e){
             log.error("Error Creating User with Username: {}, Error: {}",userDTO.getUsername(), e.getMessage());

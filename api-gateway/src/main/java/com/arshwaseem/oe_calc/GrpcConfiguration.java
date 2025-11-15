@@ -21,7 +21,7 @@ public class GrpcConfiguration {
     private static final Logger log = LoggerFactory.getLogger(GrpcConfiguration.class);
 
     @Autowired
-    private OpenTelemetry openTelemetry;
+    private final OpenTelemetry openTelemetry;
 
     @Value("${grpc.add.host:add-service}")
     private String addHost;

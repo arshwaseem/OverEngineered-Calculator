@@ -41,6 +41,7 @@ public class AuthServiceClient {
                     .header(HttpHeaders.COOKIE, cookieHeader)
                     .retrieve()
                     .bodyToMono(TokenValidationResponse.class)
+                    .contextCapture()
                     .block();
 
         } catch (Exception e) {
