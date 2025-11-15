@@ -34,6 +34,7 @@ public class AuthProxyController {
                     .bodyValue(registerRequest)
                     .retrieve()
                     .toEntity(Object.class)
+                    .contextCapture()
                     .block();
 
             return ResponseEntity.status(HttpStatus.CREATED).body(response);
@@ -55,6 +56,7 @@ public class AuthProxyController {
                     .bodyValue(loginRequest)
                     .retrieve()
                     .toEntity(Object.class)
+                    .contextCapture()
                     .block();
 
             if(response == null){
@@ -91,6 +93,7 @@ public class AuthProxyController {
                     .header(HttpHeaders.COOKIE, cookieHeader)
                     .retrieve()
                     .toEntity(Object.class)
+                    .contextCapture()
                     .block();
 
             if(response==null){
@@ -123,6 +126,7 @@ public class AuthProxyController {
                     .uri("/auth/logout")
                     .retrieve()
                     .toEntity(Object.class)
+                    .contextCapture()
                     .block();
 
             if(response==null){

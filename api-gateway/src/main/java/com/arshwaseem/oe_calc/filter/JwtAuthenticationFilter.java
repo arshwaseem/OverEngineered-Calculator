@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
+import io.micrometer.context.ContextSnapshot;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -61,6 +62,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
+            ContextSnapshot snapshot = ContextSnapshot.captureAll();
+
             TokenValidationResponse res = authServiceClient.validateToken(token, request);
 
             if(!res.isValid()){

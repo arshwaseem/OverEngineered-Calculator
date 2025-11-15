@@ -29,6 +29,9 @@ public class GatewayConfig {
         return  builder
                 .baseUrl(authServiceProperties.getUrl())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                .filter((request, next) -> {
+                    return next.exchange(request).contextWrite(ctx -> ctx);
+                })
                 .clientConnector(new ReactorClientHttpConnector(
                         HttpClient.create()
                                 .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 3000)
