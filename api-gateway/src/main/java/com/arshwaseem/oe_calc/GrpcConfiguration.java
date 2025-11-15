@@ -1,8 +1,10 @@
 package com.arshwaseem.oe_calc;
 
+import io.grpc.ClientInterceptor;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,13 +41,18 @@ public class GrpcConfiguration {
     @Value("${grpc.divide.port:50051}")
     private int dividePort;
 
+
     private ManagedChannel createOptimizedChannel(String host, int port){
 
         log.info("Creating gRPC stub to host: {} port: {}", host, port);
 
+        GrpcTelemetry grpcTelemetry = GrpcTelemetry.create(openTelemetry);
+        ClientInterceptor tracingInterceptor = grpcTelemetry.newClientInterceptor();
+
         return ManagedChannelBuilder
                 .forAddress(host, port)
                 .usePlaintext()
+                .intercept(tracingInterceptor)
                 .keepAliveTime(30, TimeUnit.SECONDS)
                 .keepAliveTimeout(10, TimeUnit.SECONDS)
                 .keepAliveWithoutCalls(true)
