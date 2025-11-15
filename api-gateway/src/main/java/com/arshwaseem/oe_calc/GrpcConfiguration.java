@@ -2,16 +2,14 @@ package com.arshwaseem.oe_calc;
 
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.instrumentation.grpc.v1_6.GrpcTelemetry;
 import lombok.Data;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import io.micrometer.tracing.Tracer;
-import io.micrometer.tracing.otel.bridge.OtelCurrentTraceContext;
-import io.opentelemetry.api.trace.Span;
-import io.opentelemetry.context.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.util.concurrent.TimeUnit;
@@ -23,7 +21,7 @@ public class GrpcConfiguration {
     private static final Logger log = LoggerFactory.getLogger(GrpcConfiguration.class);
 
     @Autowired
-    private Tracer tracer;
+    private OpenTelemetry openTelemetry;
 
     @Value("${grpc.add.host:add-service}")
     private String addHost;
@@ -42,6 +40,11 @@ public class GrpcConfiguration {
     @Value("${grpc.divide.port:50051}")
     private int dividePort;
 
+    @Bean
+    public GrpcTelemetry grpcTelemetry(){
+        return GrpcTelemetry.create(openTelemetry);
+    }
+
     private ManagedChannel createOptimizedChannel(String host, int port){
 
         log.info("Creating gRPC stub to host: {} port: {}", host, port);
@@ -55,6 +58,7 @@ public class GrpcConfiguration {
                 .idleTimeout(5, TimeUnit.MINUTES)
                 .maxInboundMessageSize(4*1024 * 1024)
                 .directExecutor()
+                .intercept(grpcTelemetry().newClientInterceptor())
                 .build();
 
     }
@@ -81,95 +85,21 @@ public class GrpcConfiguration {
 
     @Bean
     public OperationServiceGrpc.OperationServiceBlockingStub addStub(ManagedChannel addChannel){
-        return OperationServiceGrpc.newBlockingStub(addChannel)
-                .withInterceptors(new TracingClientInterceptor(tracer));
+        return OperationServiceGrpc.newBlockingStub(addChannel);
     }
 
     @Bean
     public OperationServiceGrpc.OperationServiceBlockingStub subtractStub(ManagedChannel subtractChannel){
-        return OperationServiceGrpc.newBlockingStub(subtractChannel)
-                .withInterceptors(new TracingClientInterceptor(tracer));
+        return OperationServiceGrpc.newBlockingStub(subtractChannel);
     }
 
     @Bean
     public OperationServiceGrpc.OperationServiceBlockingStub divideStub(ManagedChannel divideChannel){
-        return OperationServiceGrpc.newBlockingStub(divideChannel)
-                .withInterceptors(new TracingClientInterceptor(tracer));
+        return OperationServiceGrpc.newBlockingStub(divideChannel);
     }
 
     @Bean
     public OperationServiceGrpc.OperationServiceBlockingStub multiplyStub(ManagedChannel multiplyChannel){
-        return OperationServiceGrpc.newBlockingStub(multiplyChannel)
-                .withInterceptors(new TracingClientInterceptor(tracer));
-    }
-
-    private static class TracingClientInterceptor implements io.grpc.ClientInterceptor {
-        private final Tracer tracer;
-
-        public TracingClientInterceptor(Tracer tracer) {
-            this.tracer = tracer;
-        }
-
-        @Override
-        public <ReqT, RespT> io.grpc.ClientCall<ReqT, RespT> interceptCall(
-                io.grpc.MethodDescriptor<ReqT, RespT> method,
-                io.grpc.CallOptions callOptions,
-                io.grpc.Channel next) {
-
-            // Skip tracing if tracer is not available or no active span
-            if (tracer == null || tracer.currentSpan() == null) {
-                return next.newCall(method, callOptions);
-            }
-
-            try {
-                var currentSpan = tracer.currentSpan();
-                var currentTraceContext = tracer.currentTraceContext();
-
-                // Safely check if we have OTel context
-                if (!(currentTraceContext instanceof OtelCurrentTraceContext)) {
-                    return next.newCall(method, callOptions);
-                }
-
-                var otelContext = ((OtelCurrentTraceContext) currentTraceContext).context();
-                if (otelContext == null) {
-                    return next.newCall(method, callOptions);
-                }
-
-                // Wrap the call to propagate context
-                return new io.grpc.ForwardingClientCall.SimpleForwardingClientCall<ReqT, RespT>(
-                        next.newCall(method, callOptions)) {
-
-                    @Override
-                    public void start(Listener<RespT> responseListener, io.grpc.Metadata headers) {
-                        try {
-                            // Inject trace context into gRPC metadata
-                            var span = Span.fromContext((Context) otelContext);
-                            var spanContext = span.getSpanContext();
-
-                            if (spanContext.isValid()) {
-                                var traceId = spanContext.getTraceId();
-                                var spanId = spanContext.getSpanId();
-
-                                // Add W3C trace context headers
-                                headers.put(
-                                        io.grpc.Metadata.Key.of("traceparent", io.grpc.Metadata.ASCII_STRING_MARSHALLER),
-                                        String.format("00-%s-%s-01", traceId, spanId)
-                                );
-                            }
-                        } catch (Exception e) {
-                            // Log but don't fail the call if tracing fails
-                            // In production, you'd use proper logging
-                            System.err.println("Failed to inject trace context: " + e.getMessage());
-                        }
-
-                        super.start(responseListener, headers);
-                    }
-                };
-
-            } catch (Exception e) {
-                // If anything goes wrong with tracing, just proceed without it
-                return next.newCall(method, callOptions);
-            }
-        }
+        return OperationServiceGrpc.newBlockingStub(multiplyChannel);
     }
 }

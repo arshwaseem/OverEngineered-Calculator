@@ -114,6 +114,11 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-grpc-1.6</artifactId>
+        </dependency>
+
     </dependencies>
 
     <dependencyManagement>
