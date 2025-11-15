@@ -62,7 +62,6 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         try {
-            ContextSnapshot snapshot = ContextSnapshot.captureAll();
 
             TokenValidationResponse res = authServiceClient.validateToken(token, request);
 

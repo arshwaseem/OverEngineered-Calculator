@@ -139,6 +139,11 @@
             <artifactId>opentelemetry-exporter-otlp</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-spring-boot-starter</artifactId>
+        </dependency>
+
     </dependencies>
     <build>
         <plugins>

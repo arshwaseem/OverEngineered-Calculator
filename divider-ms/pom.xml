@@ -116,8 +116,7 @@
 
         <dependency>
             <groupId>io.opentelemetry.instrumentation</groupId>
-            <artifactId>opentelemetry-grpc-1.6</artifactId>
-            <version>2.21.0-alpha</version>
+            <artifactId>opentelemetry-spring-boot-starter</artifactId>
         </dependency>
 
     </dependencies>
