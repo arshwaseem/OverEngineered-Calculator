@@ -1,7 +1,7 @@
 global:
   imagePullPolicy: IfNotPresent  # Changed from Always - only pull if not present
   environment: dev
-  imageTag: tracing
+  imagetag: latest
 
 # Infrastructure Components
 rabbitmq:
@@ -76,7 +76,7 @@ user-ms:
   replicaCount: 2  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/user-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   database:
     host: postgres-users-rw
@@ -107,7 +107,7 @@ history-ms:
   replicaCount: 2  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/history-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   database:
     host: postgres-history-rw
@@ -142,7 +142,7 @@ auth:
   replicaCount: 2  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/auth
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     user-ms:
@@ -178,7 +178,7 @@ adder-ms:
   replicaCount: 1  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/adder-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -209,7 +209,7 @@ subtractor-ms:
   replicaCount: 1  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/subtractor-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -240,7 +240,7 @@ multiplier-ms:
   replicaCount: 1  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/multiplier-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -271,7 +271,7 @@ divider-ms:
   replicaCount: 1  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/divider-ms
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -302,7 +302,7 @@ api-gateway:
   replicaCount: 2  # Increased from 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/api-gateway
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   env:
     rabbitmq:
@@ -348,7 +348,7 @@ frontend:
   replicaCount: 2  # Keep frontend at 2
   image:
     repository: ghcr.io/arshwaseem/overengineered-calculator/frontend
-    tag: tracing
+    tag: latest
     pullPolicy: IfNotPresent
   service:
     type: LoadBalancer
