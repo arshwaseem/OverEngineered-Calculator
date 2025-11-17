@@ -541,12 +541,8 @@ kube-prometheus-stack:
           revision: 16
           datasource: Prometheus
 
-      oe-calc-services:
-        json: |
-          {
-            "title": "Over Engineered Calculator",
-            "tags": ["oe-calculator","microservices"],
-            "timezone": "browser",
+        oe-calc-services:
+          json: |
             {
               "annotations": {
                 "list": [
@@ -1783,7 +1779,7 @@ kube-prometheus-stack:
               "version": 1,
               "weekStart": ""
             }
-          }
+
 
   alertmanager:
     enabled: true
