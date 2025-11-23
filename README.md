@@ -108,17 +108,15 @@ If I could have implemented more things those would be:
 
 The system consists of 9 services working together:
 
-| Service | Purpose | Tech Stack |
-|---------|---------|------------|------|
-| **frontend** | React UI | React, TypeScript |
-| **api-gateway** | Entry point, routing | Spring Boot, REST, gRPC, WebFlux |
-| **auth-service** | JWT authentication | Spring Boot, PostgreSQL |
-| **user-service** | User management | Spring Boot, PostgreSQL |
-| **history-service** | Calculation history | Spring Boot, PostgreSQL, RabbitMQ |
-| **adder-service** | Addition operations | Spring Boot, gRPC |
-| **subtractor-service** | Subtraction operations | Spring Boot, gRPC |
-| **multiplier-service** | Multiplication operations | Spring Boot, gRPC |
-| **divider-service** | Division operations | Spring Boot, gRPC |
+**frontend** ( UI | React, TypeScript)
+**api-gateway** ( Routing | Spring Boot, REST, gRPC, WebFlux )
+**auth-service** ( JWT authentication | Spring Boot, PostgreSQL )
+**user-service** ( User management | Spring Boot, PostgreSQL )
+**history-service** ( Calculation history | Spring Boot, PostgreSQL, RabbitMQ )
+**adder-service** ( Addition operations | Spring Boot, gRPC )
+**subtractor-service** ( Subtraction operations | Spring Boot, gRPC )
+**multiplier-service** ( Multiplication operations | Spring Boot, gRPC )
+**divider-service** ( Division operations | Spring Boot, gRPC )
 
 ### Communication Patterns
 
